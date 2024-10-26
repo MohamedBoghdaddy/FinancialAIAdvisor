@@ -1,7 +1,3 @@
-Here's a README for your **Financial AI Advisor** project on GitHub, incorporating an overview, features, tech stack, and setup instructions.
-
----
-
 # Financial AI Advisor 💸🤖
 
 Welcome to **Financial AI Advisor**! This project harnesses the power of AI to provide personalized financial advice, analyze market trends, and help users make informed financial decisions. Built on a robust tech stack with a focus on data science and machine learning, Financial AI Advisor empowers users with intelligent insights for improved financial planning.
