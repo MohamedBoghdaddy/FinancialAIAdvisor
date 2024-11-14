@@ -11,7 +11,6 @@ import path from "path";
 import { fileURLToPath } from "url";
 import userRoutes from "./routes/userroutes.js";
 
-
 // Resolving __dirname for ES Module
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -60,23 +59,16 @@ app.use(
   })
 );
 
-
-
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-
-
 app.use("/api/users", userRoutes);
-
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).send("Something went wrong!");
 });
-
 
 // Serve the client app
 app.use(express.static(path.join(__dirname, "../client/build")));

@@ -14,6 +14,8 @@ export const useSignup = () => {
   const [firstName, setFirstName] = useState("");
   const [middleName, setMiddleName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [income, setIncome] = useState(""); // New state for Monthly Income
+  const [financialGoals, setFinancialGoals] = useState(""); // New state for Financial Goals
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -25,6 +27,7 @@ export const useSignup = () => {
     setErrorMessage("");
     setSuccessMessage("");
 
+    // Check for password match
     if (password !== confirmPassword) {
       setErrorMessage("Passwords do not match");
       setIsLoading(false);
@@ -43,6 +46,8 @@ export const useSignup = () => {
           firstName,
           middleName,
           lastName,
+          income, // Include Monthly Income in request
+          financialGoals, // Include Financial Goals in request
         },
         { withCredentials: true }
       );
@@ -83,6 +88,10 @@ export const useSignup = () => {
     setMiddleName,
     lastName,
     setLastName,
+    income, // Return Monthly Income state
+    setIncome, // Return setter for Monthly Income
+    financialGoals, // Return Financial Goals state
+    setFinancialGoals, // Return setter for Financial Goals
     errorMessage,
     successMessage,
     isLoading,

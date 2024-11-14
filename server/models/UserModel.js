@@ -10,7 +10,8 @@ const UserSchema = new mongoose.Schema(
     firstName: { type: String, required: true },
     middleName: { type: String },
     lastName: { type: String, required: true },
-
+    income: { type: Number }, // New field for Monthly Income
+    financialGoals: { type: String }, // New field for Financial Goals
     role: {
       type: String,
       enum: ["user", "admin"],

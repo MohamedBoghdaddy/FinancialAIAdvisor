@@ -38,21 +38,30 @@ export const register = async (req, res) => {
     username,
     email,
     password,
-    nid, // Ensure this matches your frontend and schema
+    nid,
     firstName,
     middleName,
     lastName,
     gender,
+    income,
+    financialGoals,
   } = req.body;
 
   try {
-    // Check if the user already exists
-    const existingUser = await User.findOne({ email });
+    // Check if the username, email, or nid already exists
+    const existingUser = await User.findOne({
+      $or: [{ username }, { email }, { nid }],
+    });
 
     if (existingUser) {
-      return res
-        .status(400)
-        .json({ message: "User with this email already exists" });
+      let duplicateField = "a unique field";
+      if (existingUser.username === username) duplicateField = "username";
+      else if (existingUser.email === email) duplicateField = "email";
+      else if (existingUser.nid === nid) duplicateField = "NID";
+
+      return res.status(400).json({
+        message: `User with this ${duplicateField} already exists`,
+      });
     }
 
     // Hash the password
@@ -68,6 +77,8 @@ export const register = async (req, res) => {
       middleName,
       lastName,
       gender,
+      income,
+      financialGoals,
     });
 
     await user.save();
@@ -88,13 +99,20 @@ export const register = async (req, res) => {
         firstName: user.firstName,
         middleName: user.middleName,
         lastName: user.lastName,
+        income: user.income,
+        financialGoals: user.financialGoals,
       },
     });
   } catch (error) {
-    console.error("Registration failed:", error);
-    res
-      .status(500)
-      .json({ message: "Registration failed", error: error.message });
+    if (error.code === 11000) {
+      const duplicateKey = Object.keys(error.keyPattern)[0];
+      res.status(400).json({ message: `Duplicate ${duplicateKey} found` });
+    } else {
+      console.error("Registration failed:", error);
+      res
+        .status(500)
+        .json({ message: "Registration failed", error: error.message });
+    }
   }
 };
 
@@ -144,7 +162,6 @@ export const logoutUser = async (req, res) => {
     res.status(500).json({ message: "Logout failed" });
   }
 };
-
 
 // Get user data
 export const getUser = async (req, res) => {
