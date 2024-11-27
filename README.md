@@ -61,7 +61,7 @@ npm install
 ### 3. Install Frontend Dependencies
 
 ```bash
-cd ../frontend
+cd ../client
 npm install
 ```
 
@@ -72,7 +72,7 @@ Create a `.env` file in the root of both the backend and frontend directories wi
 #### Backend `.env`
 
 ```env
-PORT=5000
+PORT=4000
 MONGO_URI=your_mongodb_uri
 JWT_SECRET=your_jwt_secret
 API_KEY=your_financial_api_key
@@ -81,7 +81,7 @@ API_KEY=your_financial_api_key
 #### Frontend `.env`
 
 ```env
-REACT_APP_API_URL=http://localhost:5000
+REACT_APP_API_URL=http://localhost:4000
 ```
 
 ### 5. Start the Application
@@ -90,17 +90,17 @@ REACT_APP_API_URL=http://localhost:5000
 
   ```bash
   cd backend
-  npm start
+  nodemon server.js
   ```
 
 - Start the frontend server:
 
   ```bash
-  cd ../frontend
+  cd client
   npm start
   ```
 
-The frontend should now be running on `http://localhost:3000` and the backend on `http://localhost:5000`.
+The frontend should now be running on `http://localhost:3000` and the backend on `http://localhost:4000`.
 
 ## 🧩 Usage
 
