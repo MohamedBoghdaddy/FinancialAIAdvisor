@@ -10,6 +10,7 @@ import session from "express-session";
 import path from "path";
 import { fileURLToPath } from "url";
 import userRoutes from "./routes/userroutes.js";
+import chatRoutes from "./routes/chatRoutes.js";
 
 // Resolving __dirname for ES Module
 const __filename = fileURLToPath(import.meta.url);
@@ -64,6 +65,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 app.use("/api/users", userRoutes);
+app.use("/api", chatRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
