@@ -43,6 +43,7 @@
     "pg-hstore": "^2.3.4",
     "razorpay": "^2.8.5",
     "react-table": "^7.8.0",
+    "sentiment": "^5.0.2",
     "sequelize": "^6.37.3",
     "stream-browserify": "^3.0.0",
     "stream-http": "^3.2.0",
