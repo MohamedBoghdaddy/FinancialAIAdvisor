@@ -7,6 +7,7 @@ import NavBar from "./Frontend/components/Home/Navbar";
 // import PaymentHistory from "./Frontend/components/Dashboard/PaymentHistory";
 import Footer from "./Frontend/components/Home/Footer";
 import MiniNavBar from "./Frontend/components/Home/Mininavbar";
+import Chatbot from "./Frontend/components/chatbot/chatbot";
 function App() {
   return (
     <BrowserRouter>
@@ -17,6 +18,7 @@ function App() {
             <>
               <NavBar />
               <Home />
+              <Chatbot/>
               <Footer />
             </>
           }
