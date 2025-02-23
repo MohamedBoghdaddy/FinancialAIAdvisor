@@ -68,9 +68,7 @@ const NavBar = () => {
             >
               WHO WE ARE
             </ScrollLink>
-         
-        
-     
+
             <ScrollLink
               to="/contact"
               className="nav-link"
@@ -81,7 +79,7 @@ const NavBar = () => {
             {isAuthenticated && user && (
               <Nav.Link
                 as={Link}
-                to="/dashboard"
+                to="/Dashboard"
                 className="nav-link"
                 onClick={handleNavCollapse}
               >

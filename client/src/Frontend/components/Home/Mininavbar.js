@@ -11,7 +11,7 @@ import { useLogout } from "../../../hooks/useLogout.js";
 import "../styles/navbar.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 
-const NavBar = () => {
+const MiniNavbar = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const navigate = useNavigate();
@@ -52,21 +52,23 @@ const NavBar = () => {
         />
         <Navbar.Collapse id="navbarScroll" className="navbar-collapse">
           <Nav className="navbar-nav ms-auto" navbarScroll>
-            <Link
-              to="/"
+            <ScrollLink
+              to="hero-section"
               smooth
               className="nav-link"
               onClick={handleNavCollapse}
             >
               HOME
-            </Link>
+            </ScrollLink>
             <ScrollLink
-              to="/Dashboard"
+              to="WhoWeAre"
+              smooth
               className="nav-link"
               onClick={handleNavCollapse}
             >
-              Dashboard{" "}
+              WHO WE ARE
             </ScrollLink>
+
             <ScrollLink
               to="/contact"
               className="nav-link"
@@ -74,6 +76,16 @@ const NavBar = () => {
             >
               Contact Us
             </ScrollLink>
+            {isAuthenticated && user && (
+              <Nav.Link
+                as={Link}
+                to="/Dashboard"
+                className="nav-link"
+                onClick={handleNavCollapse}
+              >
+                Dashboard
+              </Nav.Link>
+            )}
 
             {isAuthenticated && user ? (
               <div
@@ -122,4 +134,4 @@ const NavBar = () => {
   );
 };
 
-export default NavBar;
+export default MiniNavbar;

@@ -6,8 +6,13 @@ import Home from "./Frontend/components/Home/home";
 import NavBar from "./Frontend/components/Home/Navbar";
 // import PaymentHistory from "./Frontend/components/Dashboard/PaymentHistory";
 import Footer from "./Frontend/components/Home/Footer";
-import MiniNavBar from "./Frontend/components/Home/Mininavbar";
+import MiniNavbar from "./Frontend/components/Home/Mininavbar";
 import Chatbot from "./Frontend/components/chatbot/chatbot";
+import Questionnaire from "./Frontend/components/Dashboard/Questionnaire";
+import Dashboard from "./Frontend/components/Dashboard/Dashboard";
+import Sidebar from "./Frontend/components/Dashboard/sidebar";
+import AnalyticsReport from "./Frontend/components/Dashboard/analytics";
+import Settings from "./Frontend/components/Dashboard/settings";
 function App() {
   return (
     <BrowserRouter>
@@ -18,7 +23,7 @@ function App() {
             <>
               <NavBar />
               <Home />
-              <Chatbot/>
+              <Chatbot />
               <Footer />
             </>
           }
@@ -27,7 +32,7 @@ function App() {
           path="/login"
           element={
             <>
-              <MiniNavBar />
+              <MiniNavbar />
               <Login />
             </>
           }
@@ -36,12 +41,11 @@ function App() {
           path="/signup"
           element={
             <>
-              <MiniNavBar />
+              <MiniNavbar />
               <Signup />
             </>
           }
         />
-        
         {/* <Route
           path="/PaymentHistory"
           element={
@@ -53,7 +57,59 @@ function App() {
             </> 
           }
         />*/}
-       
+        <Route
+          path="/Questionnaire"
+          element={
+            <>
+              <MiniNavbar />
+              <Questionnaire />
+            </>
+          }
+        />
+        <Route
+          path="/Settings"
+          element={
+            <>
+              <MiniNavbar />
+              <Sidebar />
+              <Settings />
+              <Footer />
+            </>
+          }
+        />
+        <Route
+          path="/Reports"
+          element={
+            <>
+              <MiniNavbar />
+              <Sidebar />
+              <AnalyticsReport />
+              <Footer />
+            </>
+          }
+        />
+        <Route
+          path="/Questionnaire"
+          element={
+            <>
+              <MiniNavbar />
+              <Sidebar />
+              <Questionnaire />
+              <Footer />
+            </>
+          }
+        />
+        <Route
+          path="/Dashboard"
+          element={
+            <>
+              <MiniNavbar />
+              <Sidebar />
+              <Dashboard />
+              <Footer />
+            </>
+          }
+        />
       </Routes>
     </BrowserRouter>
   );

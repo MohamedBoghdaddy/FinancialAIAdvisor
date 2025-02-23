@@ -6,12 +6,8 @@ const UserSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     gender: { type: String, required: true },
-    nid: { type: String, required: true, unique: true },
     firstName: { type: String, required: true },
-    middleName: { type: String },
     lastName: { type: String, required: true },
-    income: { type: Number }, // New field for Monthly Income
-    financialGoals: { type: String }, // New field for Financial Goals
     role: {
       type: String,
       enum: ["user", "admin"],
@@ -24,9 +20,7 @@ const UserSchema = new mongoose.Schema(
     profilePhoto: {
       type: String,
     },
-    cvFileName: {
-      type: String,
-    },
+
   },
   { timestamps: true }
 );

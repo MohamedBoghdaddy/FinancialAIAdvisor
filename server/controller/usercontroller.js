@@ -38,26 +38,21 @@ export const register = async (req, res) => {
     username,
     email,
     password,
-    nid,
     firstName,
-    middleName,
     lastName,
     gender,
-    income,
-    financialGoals,
   } = req.body;
 
   try {
     // Check if the username, email, or nid already exists
     const existingUser = await User.findOne({
-      $or: [{ username }, { email }, { nid }],
+      $or: [{ username }, { email }],
     });
 
     if (existingUser) {
       let duplicateField = "a unique field";
       if (existingUser.username === username) duplicateField = "username";
       else if (existingUser.email === email) duplicateField = "email";
-      else if (existingUser.nid === nid) duplicateField = "NID";
 
       return res.status(400).json({
         message: `User with this ${duplicateField} already exists`,
@@ -72,13 +67,9 @@ export const register = async (req, res) => {
       username,
       email,
       password: hashedPassword,
-      nid,
       firstName,
-      middleName,
       lastName,
       gender,
-      income,
-      financialGoals,
     });
 
     await user.save();
@@ -95,12 +86,8 @@ export const register = async (req, res) => {
         email: user.email,
         role: user.role,
         gender: user.gender,
-        nid: user.nid,
         firstName: user.firstName,
-        middleName: user.middleName,
         lastName: user.lastName,
-        income: user.income,
-        financialGoals: user.financialGoals,
       },
     });
   } catch (error) {

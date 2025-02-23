@@ -6,10 +6,15 @@ from statsmodels.tsa.arima.model import ARIMA
 from statsmodels.tsa.statespace.sarimax import SARIMAX
 from prophet import Prophet
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, LSTM
 from sklearn.preprocessing import MinMaxScaler
 import warnings
+import json
+
+from tensorflow import keras
+
+Sequential = keras.models.Sequential
+Dense = keras.layers.Dense
+LSTM = keras.layers.LSTM
 
 warnings.filterwarnings('ignore')
 
@@ -198,3 +203,44 @@ lstm_mae = mean_absolute_error(test.values[sequence_length:], lstm_pred.flatten(
 lstm_rmse = np.sqrt(mean_squared_error(test.values[sequence_length:], lstm_pred.flatten()))
 lstm_r2 = r2_score(test.values[sequence_length:], lstm_pred.flatten())
 log(f"LSTM Metrics: MAE={lstm_mae}, RMSE={lstm_rmse}, R^2={lstm_r2}")
+
+# Save datasets (train, validation, test) as JSON
+train.to_json('REAL_train_data.json', orient='split', date_format='iso')
+val.to_json('REAL_validation_data.json', orient='split', date_format='iso')
+test.to_json('REAL_test_data.json', orient='split', date_format='iso')
+
+# Save forecast results to JSON
+results = {
+    "ARIMA": {
+        "MAE": arima_mae,
+        "RMSE": arima_rmse,
+        "R2": arima_r2,
+        "Forecast": arima_forecast.tolist()
+    },
+    "SARIMA": {
+        "MAE": sarima_mae,
+        "RMSE": sarima_rmse,
+        "R2": sarima_r2,
+        "Forecast": sarima_forecast.tolist()
+    },
+    "Prophet": {
+        "MAE": prophet_mae,
+        "RMSE": prophet_rmse,
+        "R2": prophet_r2,
+        "Forecast": prophet_pred.tolist()
+    },
+    "LSTM": {
+        "MAE": lstm_mae,
+        "RMSE": lstm_rmse,
+        "R2": lstm_r2,
+        "Forecast": lstm_pred.flatten().tolist()
+    }
+}
+
+with open('REAL_forecast_results.json', 'w') as file:
+    json.dump(results, file, indent=4)
+
+# Save LSTM model
+lstm_model.save('REAL_lstm_forecast_model.keras')
+
+log("Results and datasets successfully saved.")

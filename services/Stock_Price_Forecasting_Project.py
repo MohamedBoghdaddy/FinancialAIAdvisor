@@ -1,3 +1,5 @@
+import json
+from tensorflow.keras.models import save_model
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -6,10 +8,13 @@ from statsmodels.tsa.arima.model import ARIMA
 from statsmodels.tsa.statespace.sarimax import SARIMAX
 from prophet import Prophet
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, LSTM
 from sklearn.preprocessing import MinMaxScaler
 import warnings
+from tensorflow import keras
+
+Sequential = keras.models.Sequential
+Dense = keras.layers.Dense
+LSTM = keras.layers.LSTM
 
 warnings.filterwarnings('ignore')
 
@@ -181,3 +186,45 @@ log(f"LSTM Metrics: MAE={lstm_mae}, RMSE={lstm_rmse}, R^2={lstm_r2}")
 
 # Continue for forecasting next year and visualization
 log("Forecasting next year completed.")
+
+# Save datasets as JSON
+train.to_json('STOCK_train_data.json')
+val.to_json('STOCK_validation_data.json')
+test.to_json('STOCK_test_data.json')
+
+# Prepare results data
+results = {
+    'ARIMA': {
+        'MAE': arima_mae,
+        'RMSE': arima_rmse,
+        'R2': arima_r2,
+        'Forecast': arima_forecast.tolist()
+    },
+    'SARIMA': {
+        'MAE': sarima_mae,
+        'RMSE': sarima_rmse,
+        'R2': sarima_r2,
+        'Forecast': sarima_forecast.tolist()
+    },
+    'Prophet': {
+        'MAE': prophet_mae,
+        'RMSE': prophet_rmse,
+        'R2': prophet_r2,
+        'Forecast': prophet_pred.tolist()
+    },
+    'LSTM': {
+        'MAE': lstm_mae,
+        'RMSE': lstm_rmse,
+        'R2': lstm_r2,
+        'Forecast': lstm_pred.flatten().tolist()
+    }
+}
+
+# Save results as JSON
+with open('STOCK_forecast_results.json', 'w') as f:
+    json.dump(results, f, indent=4)
+
+# Save the trained LSTM model in Keras format
+lstm_model.save('STOCK_lstm_model.keras')
+
+log("All data and models saved successfully.")

@@ -11,6 +11,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import userRoutes from "./routes/userroutes.js";
 import chatRoutes from "./routes/chatRoutes.js";
+import questionnaireRoutes from "./routes/questionnaireRoutes.js";
 
 // Resolving __dirname for ES Module
 const __filename = fileURLToPath(import.meta.url);
@@ -66,6 +67,7 @@ app.use(cookieParser());
 
 app.use("/api/users", userRoutes);
 app.use("/api", chatRoutes);
+app.use("/api/questionnaire", questionnaireRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
