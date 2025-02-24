@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Bar } from "react-chartjs-2";
 import { Spinner, Table } from "react-bootstrap";
 import { BsFileEarmarkText, BsDownload } from "react-icons/bs";
+import axios from "axios";
 import useDashboard from "../../../hooks/useDashboard";
 import "bootstrap/dist/css/bootstrap.min.css";
 import {
@@ -24,33 +25,45 @@ ChartJS.register(
   Legend
 );
 
+const API_URL =
+  process.env.REACT_APP_API_URL || "http://localhost:4000/api/analytics";
+
 const AnalyticsReport = () => {
-  const {
-    state,
-    fetchDashboardData,
-    fetchProfile,
-    fetchInvestmentReports,
-    handleDownload,
-  } = useDashboard();
+  const { state, fetchProfile, handleDownload } = useDashboard();
   const [loading, setLoading] = useState(true);
+  const [riskToleranceData, setRiskToleranceData] = useState([]);
+  const [lifestyleData, setLifestyleData] = useState([]);
 
   useEffect(() => {
-    fetchDashboardData();
-    fetchProfile();
-    fetchInvestmentReports();
-    setLoading(false);
-  }, [fetchDashboardData, fetchProfile, fetchInvestmentReports]);
+    const fetchAnalytics = async () => {
+      try {
+        const [riskRes, lifestyleRes] = await Promise.all([
+          axios.get(`${API_URL}/risk-tolerance`),
+          axios.get(`${API_URL}/lifestyle`),
+        ]);
 
+        setRiskToleranceData(Array.isArray(riskRes.data) ? riskRes.data : []);
+        setLifestyleData(
+          Array.isArray(lifestyleRes.data) ? lifestyleRes.data : []
+        );
+      } catch (error) {
+        console.error("❌ Error fetching analytics:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+    fetchAnalytics();
+  }, [fetchProfile]);
+
+  // ✅ Chart Data Configuration
   const analyticsChartData = {
-    labels: ["Gold", "Real Estate", "Stocks"],
+    labels: riskToleranceData.map((item) => item._id || "Unknown"),
     datasets: [
       {
-        label: "Predicted Growth %",
-        data: [
-          state.forecasts?.gold?.predicted_growth || 0,
-          state.forecasts?.real_estate?.predicted_growth || 0,
-          state.forecasts?.stocks?.predicted_growth || 0,
-        ],
+        label: "Users per Risk Tolerance",
+        data: riskToleranceData.map((item) => item.totalUsers || 0),
         backgroundColor: ["#f1c40f", "#27ae60", "#2980b9"],
       },
     ],
@@ -58,10 +71,7 @@ const AnalyticsReport = () => {
 
   const chartOptions = {
     scales: {
-      y: {
-        beginAtZero: true,
-        ticks: { stepSize: 1 },
-      },
+      y: { beginAtZero: true, ticks: { stepSize: 1 } },
     },
   };
 
@@ -69,10 +79,11 @@ const AnalyticsReport = () => {
     <div className="analytic-container">
       <div className="main">
         <div className="main-top">
-          <h1>Investment Analytics & Reports</h1>
+          <h1>Financial & Investment Analytics</h1>
         </div>
 
-        <h2>Investment Forecasts</h2>
+        {/* ✅ Risk Tolerance Chart */}
+        <h2>Risk Tolerance Distribution</h2>
         <div
           className="chart-container"
           style={{ width: "60%", margin: "auto" }}
@@ -86,6 +97,7 @@ const AnalyticsReport = () => {
           )}
         </div>
 
+        {/* ✅ Profile Section */}
         {state.profile && (
           <>
             <h2>User Profile</h2>
@@ -104,24 +116,30 @@ const AnalyticsReport = () => {
           </>
         )}
 
-        <h2>Financial Preferences</h2>
-        {state.preferences ? (
+        {/* ✅ Financial Preferences Section */}
+        <h2>Lifestyle Preferences</h2>
+        {lifestyleData.length > 0 ? (
           <Table striped bordered hover>
+            <thead>
+              <tr>
+                <th>Lifestyle Type</th>
+                <th>Users</th>
+              </tr>
+            </thead>
             <tbody>
-              <tr>
-                <td>Lifestyle</td>
-                <td>{state.preferences.lifestyle}</td>
-              </tr>
-              <tr>
-                <td>Risk Tolerance</td>
-                <td>{state.preferences.riskTolerance}</td>
-              </tr>
+              {lifestyleData.map((item) => (
+                <tr key={item._id}>
+                  <td>{item._id || "Unknown"}</td>
+                  <td>{item.totalUsers || 0}</td>
+                </tr>
+              ))}
             </tbody>
           </Table>
         ) : (
-          <p>No preferences available.</p>
+          <p>No lifestyle data available.</p>
         )}
 
+        {/* ✅ Reports Section */}
         <h2>Generated Reports</h2>
         <div className="report-container">
           <div className="report-list">

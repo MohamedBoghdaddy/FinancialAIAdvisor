@@ -1,20 +1,20 @@
-// routes/analyticsRoutes.js
 import express from "express";
 import {
-  getJobApplicationAnalytics,
-  getSubscriptionAnalytics,
   getUserAnalytics,
+  getLifestyleAnalytics,
+  getRiskToleranceAnalytics,
 } from "../controller/analyticsController.js";
-import { auth, authorizeRoles } from "../Middleware/authMiddleware.js";
+import { auth } from "../Middleware/authMiddleware.js";
+
 const router = express.Router();
 
-router.get("/job-application-analytics", getJobApplicationAnalytics); // Route to fetch job application analytics
-router.get("/subscription-analytics",  getSubscriptionAnalytics); // Route to fetch subscription analytics
-router.get(
-  "/user/:userId",
-  auth,
-  authorizeRoles("admin", "user"),
-  getUserAnalytics
-);
+// Route to get analytics for a specific user's questionnaire data
+router.get("/user", auth, getUserAnalytics);
+
+// Route to get overall lifestyle analytics across all users
+router.get("/lifestyle", getLifestyleAnalytics);
+
+// Route to get overall risk tolerance distribution analytics
+router.get("/risk-tolerance", getRiskToleranceAnalytics);
 
 export default router;

@@ -44,7 +44,7 @@ const Questionnaire = () => {
   };
 
   return (
-    <div className="container">
+    <div className="survey-container">
       <h2>Personal Finance & Lifestyle Questionnaire</h2>
 
       {step === 1 && (

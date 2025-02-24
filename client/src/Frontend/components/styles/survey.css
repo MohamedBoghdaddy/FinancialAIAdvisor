@@ -1,47 +1,100 @@
-body {
-    font-family: Arial, sans-serif;
-    background-color: #f8f9fa;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    margin: 0;
-  }
-  
-  .container {
-    max-width: 400px;
-    background: white;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  }
-  
-  label {
-    display: block;
-    margin-bottom: 10px;
-    font-weight: bold;
-  }
-  
-  select, input {
+/* survey.css */
+
+/* General Container */
+.survey-container {
+  max-width: 600px;
+  margin: 50px auto;
+  padding: 20px;
+  background: #ffffff;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  text-align: center;
+}
+
+/* Heading */
+.survey-container h2 {
+  font-size: 24px;
+  color: #333;
+  margin-bottom: 20px;
+}
+
+/* Form Labels */
+label {
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+  display: block;
+  text-align: left;
+  margin-bottom: 8px;
+}
+
+/* Input Fields */
+
+select,
+textarea {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 15px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 16px;
+  transition: border-color 0.3s ease-in-out;
+}
+input:not(.chat-input), select, textarea {
     width: 100%;
-    padding: 8px;
-    margin-top: 5px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-  }
-  
-  button {
-    width: 100%;
-    background-color: #007bff;
-    color: white;
     padding: 10px;
-    margin-top: 10px;
-    border: none;
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
     border-radius: 5px;
-    cursor: pointer;
+    font-size: 16px;
+    transition: border-color 0.3s ease-in-out;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: #3498db;
+  outline: none;
+}
+
+/* Buttons */
+button {
+  width: 100%;
+  padding: 12px;
+  font-size: 18px;
+  font-weight: bold;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: 0.3s ease-in-out;
+}
+
+.bg-blue-500 {
+  background-color: #3498db;
+}
+
+.bg-blue-500:hover {
+  background-color: #2980b9;
+}
+
+.bg-green-500 {
+  background-color: #2ecc71;
+}
+
+.bg-green-500:hover {
+  background-color: #27ae60;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .survey-container {
+    width: 90%;
+    padding: 15px;
+    margin-left: 20%;
   }
-  
-  button:hover {
-    background-color: #0056b3;
+
+  button {
+    font-size: 16px;
+    padding: 10px;
   }
-  
+}

@@ -40,34 +40,16 @@ const fetchCryptoPrice = async (symbol) => {
     const cleanSymbol = symbol.replace(/\W/g, "").toUpperCase() + "USDT";
     console.log(`Fetching Binance price for: ${cleanSymbol}`);
 
-    const response = await axios.get(
-      `https://api.binance.com/api/v3/ticker/price?symbol=${cleanSymbol}`,
-      { headers: { "X-MBX-APIKEY": process.env.BINANCE_API_KEY } }
+    const { data } = await axios.get(
+      `https://api.binance.com/api/v3/ticker/price?symbol=${cleanSymbol}`
     );
 
-    if (!response.data || !response.data.price) {
-      return `❌ No price data found for ${symbol}`;
-    }
-
-    return `🚀 Crypto Price: ${symbol.toUpperCase()} is **$${
-      response.data.price
-    }**`;
+    return data.price
+      ? `🚀 **${symbol.toUpperCase()} Price**: **$${data.price}**`
+      : `❌ No price data found for ${symbol}`;
   } catch (error) {
     console.error(`Error fetching ${symbol} price:`, error.message);
-    return "Unable to fetch crypto price.";
-  }
-};
-
-// **Fetch Currency Exchange Rate from Alpha Vantage**
-const fetchCurrencyRates = async (base = "USD", target = "EUR") => {
-  try {
-    const response = await axios.get(
-      `https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=${base}&to_currency=${target}&apikey=${process.env.ALPHA_VANTAGE_API_KEY}`
-    );
-    return response.data;
-  } catch (error) {
-    console.error("Error fetching currency rates:", error);
-    return "Unable to fetch currency exchange rates.";
+    return "❌ Unable to fetch crypto price.";
   }
 };
 
@@ -85,45 +67,50 @@ const fetchStockPrice = async (symbol) => {
     const stockData = response.data.data[0];
     if (!stockData) return `❌ No stock data found for ${symbol}`;
 
-    return `📈 Stock Price for ${symbol}: $${stockData.close} (as of ${stockData.date})`;
+    return `📈 **Stock Price for ${symbol}**: **$${stockData.close}** (as of ${stockData.date})`;
   } catch (error) {
     console.error(`Error fetching stock price for ${symbol}:`, error.message);
-    return "Unable to fetch stock market data.";
+    return "❌ Unable to fetch stock market data.";
   }
 };
 
-// **Fetch Metal Prices from Alpha Vantage**
-const fetchMetalPrices = async (metal) => {
+// **Fetch Currency Exchange Rates**
+const fetchCurrencyRates = async (base = "USD", target = "EUR") => {
   try {
-    // Define the correct Finnhub symbols for gold & silver
-    const metalSymbols = {
-      GOLD: "GC1!",
-      SILVER: "SI1!",
-    };
+    const { data } = await axios.get(
+      `https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=${base}&to_currency=${target}&apikey=${process.env.ALPHA_VANTAGE_API_KEY}`
+    );
 
-    if (!metalSymbols[metal]) {
-      return `❌ No data available for ${metal}`;
-    }
+    const rate = data["Realtime Currency Exchange Rate"]["5. Exchange Rate"];
+    return `💱 **Exchange Rate**: **1 ${base} = ${rate} ${target}**`;
+  } catch (error) {
+    console.error("Error fetching currency rates:", error);
+    return "❌ Unable to fetch currency exchange rates.";
+  }
+};
 
-    const response = await axios.get(`https://finnhub.io/api/v1/quote`, {
+// **Fetch Metal Prices (Gold & Silver)**
+const fetchMetalPrices = async (metal) => {
+  const metalSymbols = { GOLD: "GC1!", SILVER: "SI1!" };
+
+  if (!metalSymbols[metal]) return `❌ No data available for ${metal}`;
+
+  try {
+    const { data } = await axios.get(`https://finnhub.io/api/v1/quote`, {
       params: {
         symbol: metalSymbols[metal],
-        token: process.env.FINNHUB_API_KEY, // Your Finnhub API Key
+        token: process.env.FINNHUB_API_KEY,
       },
     });
 
-    if (!response.data || !response.data.c) {
-      return `❌ No price data found for ${metal}`;
-    }
-
-    return `🥇 **${metal} Price**: **$${response.data.c} per ounce**`;
+    return data.c
+      ? `🥇 **${metal} Price**: **$${data.c} per ounce**`
+      : `❌ No price data found for ${metal}`;
   } catch (error) {
     console.error(`Error fetching ${metal} price:`, error.message);
-    return "Unable to fetch metal prices.";
+    return "❌ Unable to fetch metal prices.";
   }
 };
-
-
 
 // **Fetch Global Finance News from Mediastack**
 const fetchFinanceNews = async () => {
@@ -133,19 +120,10 @@ const fetchFinanceNews = async () => {
         access_key: process.env.MEDIASTACK_API_KEY,
         categories: "business",
         languages: "en",
-        limit: 20, // Fetch more articles to allow better filtering
+        limit: 20,
       },
     });
 
-    if (
-      !response.data ||
-      !response.data.data ||
-      response.data.data.length === 0
-    ) {
-      return "❌ No finance news available at the moment.";
-    }
-
-    // **Filter Finance-Related Articles**
     const financeKeywords = [
       "finance",
       "investment",
@@ -178,108 +156,84 @@ const fetchFinanceNews = async () => {
       )
     );
 
-    if (filteredArticles.length === 0) {
+    if (filteredArticles.length === 0)
       return "❌ No relevant finance news found.";
-    }
 
-    // **Format Filtered News**
-    const newsArticles = filteredArticles
-      .map(
-        (article) =>
-          `🔹 **${article.title}**\n📰 ${
-            article.description || "No description available"
-          }\n🔗 [Read more](${article.url})`
-      )
-      .join("\n\n");
-
-    return `📢 **Latest Finance News:**\n\n${newsArticles}`;
+    return (
+      `📢 **Latest Finance News:**\n\n` +
+      filteredArticles
+        .map(
+          (article) =>
+            `🔹 **${article.title}**\n📰 ${
+              article.description || "No description available"
+            }\n🔗 [Read more](${article.url})`
+        )
+        .join("\n\n")
+    );
   } catch (error) {
     console.error("Error fetching finance news:", error.message);
-    return "Unable to fetch finance news.";
+    return "❌ Unable to fetch finance news.";
   }
 };
-
 
 // **Chatbot Handler**
 export const handleChatRequest = async (req, res) => {
   const { message } = req.body;
-  const lowerMessage = message.toLowerCase();
+  const lowerMessage = message.toLowerCase().trim();
 
-  // **Check FAQs**
-  if (faqs[lowerMessage]) {
-    return res.json({ response: faqs[lowerMessage] });
-  }
+  if (faqs[lowerMessage]) return res.json({ response: faqs[lowerMessage] });
 
   try {
-    // **Sentiment Analysis**
     const sentimentResult = sentiment.analyze(message);
-    let sentimentLabel = "😐 Neutral";
-    if (sentimentResult.score > 0) sentimentLabel = "😊 Positive";
-    else if (sentimentResult.score < 0) sentimentLabel = "😞 Negative";
+    const sentimentLabel =
+      sentimentResult.score > 0
+        ? "😊 Positive"
+        : sentimentResult.score < 0
+        ? "😞 Negative"
+        : "😐 Neutral";
 
-    let responseText = `🔍 Sentiment Analysis: ${sentimentLabel}\nAnalyzing financial data for: ${message}`;
+    let responseText = `🔍 **Sentiment Analysis**: ${sentimentLabel}\n🧐 **Analyzing financial data for**: ${message}`;
+    let foundRelevantData = false;
 
-    // **Check for Crypto Prices**
-    if (message.includes("crypto price of")) {
-      const cryptoSymbol = message.split("crypto price of ")[1].toUpperCase();
-      const cryptoData = await fetchCryptoPrice(cryptoSymbol);
-      responseText += `\n${cryptoData}`;
+    if (/btc|eth|crypto price/i.test(lowerMessage)) {
+      const cryptoSymbol =
+        lowerMessage.match(/(?:btc|eth|crypto price of )(\w+)/)?.[1] || "BTC";
+      responseText += `\n${await fetchCryptoPrice(cryptoSymbol)}`;
+      foundRelevantData = true;
     }
 
-    // **Check for Stock Price**
-    else if (message.includes("stock price of ")) {
-      const stockSymbol = message.split("stock price of ")[1].toUpperCase();
-      const stockData = await fetchStockPrice(stockSymbol);
-      responseText += `\n${stockData}`;
+    if (/stock price/i.test(lowerMessage)) {
+      const stockSymbol =
+        lowerMessage.match(/stock price of (\w+)/)?.[1]?.toUpperCase() ||
+        "AAPL";
+      responseText += `\n${await fetchStockPrice(stockSymbol)}`;
+      foundRelevantData = true;
     }
 
-    // **Check for Exchange Rates**
-    else if (
-      message.includes("exchange rate") ||
-      message.includes("currency")
-    ) {
-      const currencyData = await fetchCurrencyRates();
-      responseText += `\n💱 Currency Exchange Rate: ${JSON.stringify(
-        currencyData
-      )}`;
+    if (/exchange rate|currency/i.test(lowerMessage)) {
+      responseText += `\n${await fetchCurrencyRates()}`;
+      foundRelevantData = true;
     }
 
-    // **Check for Metal Prices**
-    else if (
-      message.includes("gold") ||
-      message.includes("silver") ||
-      message.includes("metal prices")
-    ) {
-      const metalData = await fetchMetalPrices();
-      responseText += `\n🥇 Metal Prices: ${JSON.stringify(metalData)}`;
+    if (/gold|silver|metal prices/i.test(lowerMessage)) {
+      responseText += `\n${await fetchMetalPrices(lowerMessage.toUpperCase())}`;
+      foundRelevantData = true;
     }
 
-    // **Check for Finance News**
-    else if (
-      message.includes("finance news") ||
-      message.includes("business news")
-    ) {
-      const financeNews = await fetchFinanceNews();
-      responseText += `\n${financeNews}`;
+    if (/finance news|business news/i.test(lowerMessage)) {
+      responseText += `\n${await fetchFinanceNews()}`;
+      foundRelevantData = true;
     }
 
-    // **No Relevant Data Found**
-    else {
-      responseText += `\n❌ No relevant financial data found for: ${message}`;
-    }
+    if (!foundRelevantData)
+      responseText += `\n💡 **Financial Tip**: ${
+        financialTips[Math.floor(Math.random() * financialTips.length)]
+      }`;
 
-    // **Add a Financial Tip**
-    responseText += `\n💡 Financial Tip: ${
-      financialTips[Math.floor(Math.random() * financialTips.length)]
-    }`;
-
-    // **Save to Database**
-    const chatEntry = new ChatModel({ message, response: responseText });
-    await chatEntry.save();
-
+    await new ChatModel({ message, response: responseText }).save();
     res.json({ response: responseText });
   } catch (error) {
     console.error("Error processing request:", error);
-    res.status(500).json({ response: "Error fetching financial data." });
+    res.status(500).json({ response: "⚠️ Error fetching financial data." });
   }
 };

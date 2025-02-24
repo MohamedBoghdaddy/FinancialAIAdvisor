@@ -13,6 +13,7 @@ import Dashboard from "./Frontend/components/Dashboard/Dashboard";
 import Sidebar from "./Frontend/components/Dashboard/sidebar";
 import AnalyticsReport from "./Frontend/components/Dashboard/analytics";
 import Settings from "./Frontend/components/Dashboard/settings";
+import Profile from "./Frontend/components/Dashboard/profile";
 function App() {
   return (
     <BrowserRouter>
@@ -62,6 +63,7 @@ function App() {
           element={
             <>
               <MiniNavbar />
+              <Sidebar />
               <Questionnaire />
             </>
           }
@@ -78,7 +80,18 @@ function App() {
           }
         />
         <Route
-          path="/Reports"
+          path="/profile"
+          element={
+            <>
+              <MiniNavbar />
+              <Sidebar />
+              <Profile />
+              <Footer />
+            </>
+          }
+        />
+        <Route
+          path="/analytics"
           element={
             <>
               <MiniNavbar />

@@ -53,13 +53,15 @@ const NavBar = () => {
         <Navbar.Collapse id="navbarScroll" className="navbar-collapse">
           <Nav className="navbar-nav ms-auto" navbarScroll>
             <ScrollLink
-              to="hero-section"
+              as={Link}
+              to="/"
               smooth
               className="nav-link"
               onClick={handleNavCollapse}
             >
               HOME
             </ScrollLink>
+
             <ScrollLink
               to="WhoWeAre"
               smooth
