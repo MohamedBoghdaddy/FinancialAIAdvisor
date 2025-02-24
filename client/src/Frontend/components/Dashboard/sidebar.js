@@ -174,6 +174,11 @@ const Sidebar = () => {
             <FaCog /> Settings
           </Link>
         </li>
+        <li>
+          <Link to="/AIChat">
+            <FaCog /> AIChat
+          </Link>
+        </li>
       </ul>
     </div>
   );

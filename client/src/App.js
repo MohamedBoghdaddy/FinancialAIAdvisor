@@ -14,6 +14,7 @@ import Sidebar from "./Frontend/components/Dashboard/sidebar";
 import AnalyticsReport from "./Frontend/components/Dashboard/analytics";
 import Settings from "./Frontend/components/Dashboard/settings";
 import Profile from "./Frontend/components/Dashboard/profile";
+import AIChat from "./Frontend/components/chatbot/AIChat";
 function App() {
   return (
     <BrowserRouter>
@@ -97,6 +98,17 @@ function App() {
               <MiniNavbar />
               <Sidebar />
               <AnalyticsReport />
+              <Footer />
+            </>
+          }
+        />
+        <Route
+          path="/AIChat"
+          element={
+            <>
+              <MiniNavbar />
+              <Sidebar />
+              <AIChat />
               <Footer />
             </>
           }

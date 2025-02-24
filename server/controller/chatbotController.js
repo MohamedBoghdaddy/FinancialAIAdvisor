@@ -178,7 +178,7 @@ const fetchFinanceNews = async () => {
 
 // **Chatbot Handler**
 export const handleChatRequest = async (req, res) => {
-  const { message } = req.body;
+  const { message, userId } = req.body; // Extract userId from request body (if available)
   const lowerMessage = message.toLowerCase().trim();
 
   if (faqs[lowerMessage]) return res.json({ response: faqs[lowerMessage] });
@@ -230,7 +230,14 @@ export const handleChatRequest = async (req, res) => {
         financialTips[Math.floor(Math.random() * financialTips.length)]
       }`;
 
-    await new ChatModel({ message, response: responseText }).save();
+    // **Save chat to MongoDB, including userId if found**
+    const chatEntry = new ChatModel({
+      userId: userId || null, // Store user ID if available, otherwise set to null
+      message,
+      response: responseText,
+    });
+
+    await chatEntry.save();
     res.json({ response: responseText });
   } catch (error) {
     console.error("Error processing request:", error);

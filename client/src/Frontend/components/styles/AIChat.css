@@ -1,0 +1,112 @@
+/* 🌟 AI Chat Container */
+.ai-chat-container {
+  width: 100%;
+  max-width: 600px;
+  margin: 50px auto;
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.15);
+  font-family: "Arial", sans-serif;
+  text-align: center;
+  transition: transform 0.2s ease-in-out;
+}
+
+/* 💬 Title */
+.ai-chat-container h2 {
+  color: #333;
+  font-size: 22px;
+  margin-bottom: 15px;
+  font-weight: bold;
+}
+
+/* 📜 Chat Box */
+.chat-box {
+  height: 350px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 15px;
+  background: #f9f9f9;
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+  scroll-behavior: smooth;
+}
+
+/* 🗣️ User & AI Messages */
+.message {
+  padding: 12px;
+  border-radius: 8px;
+  margin: 5px 0;
+  max-width: 80%;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.user-message {
+  background: #007bff;
+  color: white;
+  align-self: flex-end;
+  text-align: right;
+}
+
+.ai-message {
+  background: #eee;
+  color: #333;
+  align-self: flex-start;
+  text-align: left;
+}
+
+/* 🔽 Input Field */
+.chat-form {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.chat-input {
+  flex-grow: 1;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 16px;
+  outline: none;
+  transition: border 0.3s ease-in-out;
+}
+
+.chat-input:focus {
+  border-color: #007bff;
+}
+
+/* 🚀 Send Button */
+.chat-button {
+  padding: 12px 18px;
+  background: #28a745;
+  color: white;
+  font-size: 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.chat-button:hover {
+  background: #218838;
+}
+
+.chat-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+/* 📱 Responsive Design */
+@media (max-width: 768px) {
+  .ai-chat-container {
+    max-width: 90%;
+  }
+
+  .chat-box {
+    height: 300px;
+  }
+}

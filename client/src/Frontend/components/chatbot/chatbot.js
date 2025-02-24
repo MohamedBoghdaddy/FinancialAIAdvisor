@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import useChat from "../../../hooks/useChat";
+import { useAuthContext } from "../../../context/AuthContext"; // Import AuthContext for user ID
 import "../styles/chat.css";
 
 const API_URL =
@@ -7,6 +8,7 @@ const API_URL =
 
 const Chatbot = () => {
   const { messages, addMessage } = useChat();
+  const { user } = useAuthContext(); // Get logged-in user
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const chatEndRef = useRef(null);
@@ -29,7 +31,10 @@ const Chatbot = () => {
       const response = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: input }),
+        body: JSON.stringify({
+          message: input, // Fixed variable name
+          userId: user?._id || null, // Include user ID if available
+        }),
       });
 
       const data = await response.json();
@@ -51,28 +56,26 @@ const Chatbot = () => {
 
   return (
     <div className="chat-container">
-      {/* Chat Messages */}
       <div className="chat-messages">
         {messages.map((msg, index) => (
           <div key={index} className={`message ${msg.sender}-message`}>
             <span dangerouslySetInnerHTML={{ __html: msg.text }} />
           </div>
         ))}
-        <div ref={chatEndRef} />
+        <div ref={chatEndRef} /> {/* Ensures auto-scroll */}
       </div>
 
-      {/* Chat Form */}
       <form onSubmit={handleSubmit} className="chat-form">
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           className="chat-input"
-          placeholder="Ask me anything about finance..."
+          placeholder="Ask a financial question..."
           disabled={loading}
         />
         <button type="submit" className="chat-button" disabled={loading}>
-          {loading ? "..." : "Send"}
+          {loading ? "Thinking..." : "Send"}
         </button>
       </form>
     </div>
