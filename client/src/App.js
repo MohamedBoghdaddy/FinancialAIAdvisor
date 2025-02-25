@@ -41,7 +41,7 @@ function App() {
           }
         />
         <Route
-          path="/signup"
+          path="/Signup"
           element={
             <>
               <MiniNavbar />

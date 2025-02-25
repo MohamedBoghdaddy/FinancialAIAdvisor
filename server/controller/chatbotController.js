@@ -179,11 +179,11 @@ const fetchFinanceNews = async () => {
 // **Chatbot Handler**
 export const handleChatRequest = async (req, res) => {
   const { message } = req.body;
-  const userId = req.user ? req.user._id : null; 
+  const userId = req.user ? req.user._id : null;
 
-   if (!message) {
-     return res.status(400).json({ message: "Message cannot be empty." });
-   }
+  if (!message) {
+    return res.status(400).json({ message: "Message cannot be empty." });
+  }
 
   const lowerMessage = message.toLowerCase().trim();
 
@@ -238,7 +238,7 @@ export const handleChatRequest = async (req, res) => {
 
     // **Save chat to MongoDB, including userId if found**
     const chatEntry = new ChatModel({
-      userId: userId , // Store user ID if available, otherwise set to null
+      userId: userId, // Store user ID if available, otherwise set to null
       message,
       response: responseText,
     });
@@ -248,5 +248,30 @@ export const handleChatRequest = async (req, res) => {
   } catch (error) {
     console.error("Error processing request:", error);
     res.status(500).json({ response: "⚠️ Error fetching financial data." });
+  }
+};
+
+// **✅ Get Chat History by User ID**
+export const getChatByID = async (req, res) => {
+  try {
+    const userId = req.user._id; // Extract user ID from token
+
+    if (!userId) {
+      return res.status(400).json({ message: "User ID is required." });
+    }
+
+    // **Find chats by user ID and sort by timestamp (latest first)**
+    const chats = await ChatModel.find({ userId }).sort({ timestamp: -1 });
+
+    if (chats.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No chat history found for this user." });
+    }
+
+    res.status(200).json(chats);
+  } catch (error) {
+    console.error("Error fetching chat history:", error);
+    res.status(500).json({ message: "Error retrieving chat history." });
   }
 };

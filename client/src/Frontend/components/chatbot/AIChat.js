@@ -1,54 +1,87 @@
 import { useState, useRef, useEffect } from "react";
 import { useAuthContext } from "../../../context/AuthContext";
+import Cookies from "js-cookie";
 import "../styles/AIChat.css";
+
+const API_URLS = [
+  "http://127.0.0.1:5000/api/chat", // Flask API
+  "http://localhost:4000/api/chat/chat", // Express API
+  "http://127.0.0.1:8000/api/chat", // FastAPI
+];
 
 const AIChat = () => {
   const { state } = useAuthContext();
-  const { user } = state;
+  const { user, isAuthenticated } = state;
   const [userInput, setUserInput] = useState("");
   const [chatHistory, setChatHistory] = useState([]);
+  const [questionnaire, setQuestionnaire] = useState(null);
   const [loading, setLoading] = useState(false);
   const chatEndRef = useRef(null);
+
+  // ✅ Fetch the latest questionnaire when the user is authenticated
+  useEffect(() => {
+    if (!isAuthenticated || !user) {
+      console.warn(
+        "🚫 User is not authenticated. Skipping questionnaire fetch."
+      );
+      return;
+    }
+
+    const fetchQuestionnaire = async () => {
+      try {
+        let token = Cookies.get("token") || localStorage.getItem("token");
+
+        if (!token) {
+          console.error("❌ No token found. Ensure the user is logged in.");
+          return;
+        }
+
+        const response = await fetch(
+          "http://localhost:4000/api/questionnaire/latest",
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`, // ✅ Ensure token is sent
+              "Content-Type": "application/json",
+            },
+            credentials: "include", // ✅ Allow cookies to be sent
+          }
+        );
+
+        if (!response.ok)
+          throw new Error(
+            `Failed to fetch questionnaire. Status: ${response.status}`
+          );
+
+        const data = await response.json();
+        setQuestionnaire(data);
+      } catch (error) {
+        console.error("❌ Error fetching questionnaire:", error.message);
+      }
+    };
+
+    fetchQuestionnaire();
+  }, [isAuthenticated, user]);
 
   // ✅ Scroll to latest message
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatHistory]);
 
-  // ✅ Tries Flask API first, then falls back to Express, then FastAPI
+  // ✅ Handles user message and sends it to AI API
   const sendMessageToAI = async (e) => {
     e.preventDefault();
     if (!user?._id || !user.salary || !userInput.trim()) return;
 
-    // ✅ Add user message to chat instantly
     const newUserMessage = { role: "user", text: userInput };
     setChatHistory((prev) => [...prev, newUserMessage]);
     setUserInput("");
     setLoading(true);
 
-    // ✅ API Endpoints
-    const flaskAPI = "http://127.0.0.1:5000/api/chat";
-    const expressAPI = "http://localhost:4000/api/chat";
-    const fastAPI = "http://127.0.0.1:8000/api/chat"; // FastAPI fallback
-
     try {
       let response;
-
-      // 🔹 Try Flask API first
-      response = await fetch(flaskAPI, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: user._id,
-          salary: user.salary,
-          message: userInput,
-        }),
-      });
-
-      // 🔹 If Flask fails, try Express API
-      if (!response.ok) {
-        console.warn("⚠️ Flask API failed. Trying Express...");
-        response = await fetch(expressAPI, {
+      for (const url of API_URLS) {
+        response = await fetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -57,30 +90,17 @@ const AIChat = () => {
             message: userInput,
           }),
         });
+
+        if (response.ok) break;
       }
 
-      // 🔹 If Express also fails, try FastAPI
-      if (!response.ok) {
-        console.warn("⚠️ Express API failed. Trying FastAPI...");
-        response = await fetch(fastAPI, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userId: user._id,
-            salary: user.salary,
-            message: userInput,
-          }),
-        });
-      }
-
-      // 🔹 If all fail, show error
       if (!response.ok) throw new Error(`Server error: ${response.status}`);
 
       const data = await response.json();
 
-      // ✅ Append AI Response
       setChatHistory((prev) => [
         ...prev,
+        { role: "ai", text: `🤖 AI Agent: Analyzing data...` },
         { role: "ai", text: data.response || "🤖 No response from AI." },
       ]);
     } catch (error) {
@@ -97,6 +117,45 @@ const AIChat = () => {
   return (
     <div className="ai-chat-container">
       <h2>💬 Financial AI Advisor</h2>
+
+      {/* 📌 Read-Only Questionnaire Data */}
+      {questionnaire ? (
+        <div className="questionnaire-box">
+          <h3>📋 Your Financial Profile</h3>
+          <p>
+            <strong>Age:</strong> {questionnaire.age || "N/A"}
+          </p>
+          <p>
+            <strong>Employment Status:</strong>{" "}
+            {questionnaire.employmentStatus || "N/A"}
+          </p>
+          <p>
+            <strong>Home Ownership:</strong>{" "}
+            {questionnaire.homeOwnership || "N/A"}
+          </p>
+          <p>
+            <strong>Debt Status:</strong> {questionnaire.hasDebt ? "Yes" : "No"}
+          </p>
+          <p>
+            <strong>Lifestyle:</strong> {questionnaire.lifestyle || "N/A"}
+          </p>
+          <p>
+            <strong>Risk Tolerance:</strong>{" "}
+            {questionnaire.riskTolerance || "N/A"}
+          </p>
+          <p>
+            <strong>Dependents:</strong> {questionnaire.dependents || "N/A"}
+          </p>
+          <p>
+            <strong>Financial Goals:</strong>{" "}
+            {questionnaire.financialGoals || "N/A"}
+          </p>
+        </div>
+      ) : (
+        <p className="no-questionnaire">❌ No questionnaire found.</p>
+      )}
+
+      {/* 💬 Chatbox */}
       <div className="chat-box">
         {chatHistory.map((msg, index) => (
           <div key={index} className={`message ${msg.role}-message`}>
@@ -106,6 +165,7 @@ const AIChat = () => {
         <div ref={chatEndRef} />
       </div>
 
+      {/* 📝 Input Field */}
       <form onSubmit={sendMessageToAI} className="chat-form">
         <input
           type="text"

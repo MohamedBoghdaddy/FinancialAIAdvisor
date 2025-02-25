@@ -1,36 +1,54 @@
 import express from "express";
 import {
-  register,
-  login,
+  registerUser,
+  loginUser,
   logoutUser,
-  getUser,
-  updateUser,
-  deleteUser,
+  getAllUsers,
+  getUserById,
   checkAuth,
+  updateUserProfile,
+  deleteUser,
+  upload,
 } from "../controller/usercontroller.js";
+
 import { auth, authorizeRoles } from "../Middleware/authMiddleware.js";
 
 const router = express.Router();
 
-router.post("/signup", register);
-router.post("/login", login);
-router.post("/logout", logoutUser);
+/**
+ * ✅ PUBLIC ROUTES (No authentication required)
+ */
+router.post("/signup", registerUser); // Register a new user
+router.post("/login", loginUser); // Login and get JWT token
+router.post("/logout", logoutUser); // Logout user
 
-router.get("/api/users/getone/:userId", getUser);
-router.put("/update/:userId", auth, updateUser);
-router.delete("/:userId", auth, deleteUser);
+/**
+ * ✅ PROTECTED ROUTES (Requires authentication)
+ */
+router.get("/users", auth, getAllUsers); // Get all users (Admin only)
+router.get("/users/:userId", auth, getUserById); // Get a specific user by ID
+router.get("/checkAuth", checkAuth); // Check authentication status
 
-// Route accessible only to admins
+// ✅ Update user profile (Profile photo upload supported)
+router.put(
+  "/profile/:userId",
+  auth,
+  upload.single("profilePhoto"),
+  updateUserProfile
+);
+
+// ✅ Delete user (Only authorized users can delete)
+router.delete("/users/:userId", auth, authorizeRoles("admin"), deleteUser);
+
+/**
+ * ✅ ROLE-BASED ROUTES (Restricted Access)
+ */
 router.get("/admin", auth, authorizeRoles("admin"), (req, res) => {
   res.status(200).json({ message: "Welcome, Admin!" });
 });
 
-// Route accessible to both admins and users
 router.get("/dashboard", auth, authorizeRoles("admin", "user"), (req, res) => {
   res.status(200).json({ message: "Welcome to the Dashboard" });
 });
-
-// Add the checkAuth route
-router.get("/checkAuth", checkAuth);
 
 export default router;

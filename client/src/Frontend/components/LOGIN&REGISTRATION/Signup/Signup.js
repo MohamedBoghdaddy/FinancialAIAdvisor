@@ -13,10 +13,6 @@ const Signup = () => {
     setPassword,
     confirmPassword,
     setConfirmPassword,
-    showPassword,
-    setShowPassword,
-    showConfirmPassword,
-    setShowConfirmPassword,
     firstName,
     setFirstName,
     lastName,
@@ -32,6 +28,7 @@ const Signup = () => {
   return (
     <div className="main-Container">
       <div className="frame-Container">
+        {/* Left Side (Signup Form) */}
         <div className="left-sign">
           <h2>Create Your Account</h2>
           <form onSubmit={handleSignup}>
@@ -43,8 +40,10 @@ const Signup = () => {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 maxLength={20}
+                required
               />
             </div>
+
             <div className="field">
               <label htmlFor="email">Email:</label>
               <input
@@ -53,8 +52,10 @@ const Signup = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 maxLength={70}
+                required
               />
             </div>
+
             <div className="field">
               <label htmlFor="firstName">First Name:</label>
               <input
@@ -62,8 +63,10 @@ const Signup = () => {
                 id="firstName"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
+                required
               />
             </div>
+
             <div className="field">
               <label htmlFor="lastName">Last Name:</label>
               <input
@@ -71,46 +74,34 @@ const Signup = () => {
                 id="lastName"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
+                required
               />
             </div>
-            <div className="field password-container">
+
+            <div className="field">
               <label htmlFor="password">Password:</label>
               <input
-                type={showPassword ? "text" : "password"}
+                type="password"
                 id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                minLength={6}
+                required
               />
-              <button
-                type="button"
-                className="show-password"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                <i
-                  className={showPassword ? "fas fa-eye-slash" : "fas fa-eye"}
-                ></i>
-              </button>
             </div>
-            <div className="field password-container">
+
+            <div className="field">
               <label htmlFor="confirmPassword">Confirm Password:</label>
               <input
-                type={showConfirmPassword ? "text" : "password"}
+                type="password"
                 id="confirmPassword"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
+                minLength={6}
+                required
               />
-              <button
-                type="button"
-                className="show-password"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              >
-                <i
-                  className={
-                    showConfirmPassword ? "fas fa-eye-slash" : "fas fa-eye"
-                  }
-                ></i>
-              </button>
             </div>
+
             <div className="field">
               <label>Gender:</label>
               <div className="gender-container">
@@ -120,7 +111,8 @@ const Signup = () => {
                     name="gender"
                     value="male"
                     checked={gender === "male"}
-                    onChange={(e) => setGender(e.target.value)}
+                    onChange={() => setGender("male")}
+                    required
                   />
                   Male
                 </label>
@@ -130,19 +122,26 @@ const Signup = () => {
                     name="gender"
                     value="female"
                     checked={gender === "female"}
-                    onChange={(e) => setGender(e.target.value)}
+                    onChange={() => setGender("female")}
+                    required
                   />
                   Female
                 </label>
               </div>
             </div>
+
+            {/* Display error or success messages */}
             {errorMessage && <div className="error">{errorMessage}</div>}
             {successMessage && <div className="success">{successMessage}</div>}
+
+            {/* Submit button */}
             <button type="submit" disabled={isLoading} className="left_btn">
               {isLoading ? "Signing up..." : "Signup"}
             </button>
           </form>
         </div>
+
+        {/* Right Side (Login Redirect) */}
         <div className="right-sign">
           <h1>Already have an account?</h1>
           <Link to="/login">

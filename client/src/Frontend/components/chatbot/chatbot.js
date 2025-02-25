@@ -31,49 +31,54 @@ const Chatbot = () => {
   }, [messages]);
 
   // ✅ Handle sending messages
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  if (!input.trim()) return;
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!input.trim()) return;
 
-  const userMessage = { text: input, sender: "user" };
-  setMessages((prevMessages) => [...prevMessages, userMessage]); // Add user message
-  setInput("");
-  setLoading(true);
+    console.log("🔍 Sending message:", input);
+    console.log("🔍 User ID:", user?._id);
 
-  try {
-    console.log("Sending Token:", user?.token); // DEBUGGING
+    const userMessage = { text: input, sender: "user" };
+    setMessages((prevMessages) => [...prevMessages, userMessage]); // Add user message
+    setInput("");
+    setLoading(true);
 
-    const response = await fetch(API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${user?.token}`, 
-      },
-      body: JSON.stringify({
-        message: input,
-        userId: user?._id || null, 
-      }),
-    });
+    try {
+      console.log("Sending Token:", user?.token); // DEBUGGING
 
-    if (!response.ok) {
-      throw new Error(`Error: ${response.status} ${response.statusText}`);
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${user?.token}`,
+        },
+        body: JSON.stringify({
+          message: input,
+          userId: user?._id || null,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const botMessage = { text: data.response, sender: "bot" };
+
+      setMessages((prevMessages) => [...prevMessages, botMessage]); // Add bot response
+    } catch (error) {
+      console.error("Chatbot API Error:", error);
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        {
+          text: "❌ Error fetching response. Please try again.",
+          sender: "bot",
+        },
+      ]);
+    } finally {
+      setLoading(false);
     }
-
-    const data = await response.json();
-    const botMessage = { text: data.response, sender: "bot" };
-
-    setMessages((prevMessages) => [...prevMessages, botMessage]); // Add bot response
-  } catch (error) {
-    console.error("Chatbot API Error:", error);
-    setMessages((prevMessages) => [
-      ...prevMessages,
-      { text: "❌ Error fetching response. Please try again.", sender: "bot" },
-    ]);
-  } finally {
-    setLoading(false);
-  }
-};
-
+  };
 
   return (
     <div className="chat-container">
