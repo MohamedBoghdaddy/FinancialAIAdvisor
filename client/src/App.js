@@ -15,6 +15,7 @@ import AnalyticsReport from "./Frontend/components/Dashboard/analytics";
 import Settings from "./Frontend/components/Dashboard/settings";
 import Profile from "./Frontend/components/Dashboard/profile";
 import AIChat from "./Frontend/components/chatbot/AIChat";
+
 function App() {
   return (
     <BrowserRouter>

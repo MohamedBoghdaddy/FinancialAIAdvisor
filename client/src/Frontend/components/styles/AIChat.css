@@ -103,7 +103,8 @@
 /* 📱 Responsive Design */
 @media (max-width: 768px) {
   .ai-chat-container {
-    max-width: 90%;
+    max-width: 70%;
+    margin-left: 25%;
   }
 
   .chat-box {

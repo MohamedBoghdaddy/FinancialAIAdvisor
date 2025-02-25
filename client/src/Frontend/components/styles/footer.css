@@ -107,3 +107,12 @@
   background-color: #fff;
   color: #1c1c1c;
 }
+
+
+@media (max-width: 768px) {
+.footer {
+max-width: 80%;
+margin-left: 22%;
+}
+
+}

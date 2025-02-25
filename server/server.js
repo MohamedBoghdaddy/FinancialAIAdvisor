@@ -77,7 +77,7 @@ app.use(cookieParser());
 
 // ✅ API Routes
 app.use("/api/users", userRoutes);
-app.use("/api", chatRoutes);
+app.use("/api/chat", chatRoutes);
 app.use("/api/questionnaire", questionnaireRoutes);
 app.use("/api/analytics", analyticsRoutes);
 

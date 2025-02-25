@@ -45,7 +45,6 @@ const Signup = () => {
                 maxLength={20}
               />
             </div>
-
             <div className="field">
               <label htmlFor="email">Email:</label>
               <input
@@ -56,7 +55,6 @@ const Signup = () => {
                 maxLength={70}
               />
             </div>
-
             <div className="field">
               <label htmlFor="firstName">First Name:</label>
               <input
@@ -66,7 +64,6 @@ const Signup = () => {
                 onChange={(e) => setFirstName(e.target.value)}
               />
             </div>
-
             <div className="field">
               <label htmlFor="lastName">Last Name:</label>
               <input
@@ -76,7 +73,6 @@ const Signup = () => {
                 onChange={(e) => setLastName(e.target.value)}
               />
             </div>
-
             <div className="field password-container">
               <label htmlFor="password">Password:</label>
               <input
@@ -95,7 +91,6 @@ const Signup = () => {
                 ></i>
               </button>
             </div>
-
             <div className="field password-container">
               <label htmlFor="confirmPassword">Confirm Password:</label>
               <input
@@ -116,7 +111,6 @@ const Signup = () => {
                 ></i>
               </button>
             </div>
-
             <div className="field">
               <label>Gender:</label>
               <div className="gender-container">
@@ -142,16 +136,13 @@ const Signup = () => {
                 </label>
               </div>
             </div>
-
             {errorMessage && <div className="error">{errorMessage}</div>}
             {successMessage && <div className="success">{successMessage}</div>}
-
             <button type="submit" disabled={isLoading} className="left_btn">
               {isLoading ? "Signing up..." : "Signup"}
             </button>
           </form>
         </div>
-
         <div className="right-sign">
           <h1>Already have an account?</h1>
           <Link to="/login">

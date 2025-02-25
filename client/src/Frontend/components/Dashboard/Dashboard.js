@@ -28,14 +28,12 @@ const Dashboard = () => {
   // ✅ Fetch AI Financial Analysis
   const analyzeFinancialData = async () => {
     if (!user?._id || !user.salary) return;
-
     try {
       const response = await fetch("http://localhost:5000/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: user._id, salary: user.salary }),
       });
-
       const data = await response.json();
       console.log("Financial Analysis Result:", data);
     } catch (error) {
@@ -57,11 +55,9 @@ const Dashboard = () => {
       colors: ["#4CAF50"],
     },
   };
-
   return (
     <div className="dashboard-container">
       <h2>Financial Investment Overview</h2>
-
       <div className="stats-container">
         <div className="stat-card">
           <BsCurrencyDollar className="stat-icon" />
@@ -84,7 +80,6 @@ const Dashboard = () => {
           <p>Gold Investment</p>
         </div>
       </div>
-
       <div className="chart-container">
         <h3>Investment Trends</h3>
         <Chart

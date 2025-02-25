@@ -3,50 +3,65 @@ import User from "../models/UserModel.js";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
+// **Authentication Middleware**
+
 export const auth = async (req, res, next) => {
-  let token;
-
-  // Retrieve token from the Authorization header
-  if (
-    req.headers.authorization &&
-    req.headers.authorization.startsWith("Bearer")
-  ) {
-    token = req.headers.authorization.split(" ")[1];
-  }
-
-  // If no token is found, return an error
-  if (!token) {
-    return res.status(401).json({
-      message: "Authorization denied, no token provided",
-    });
-  }
-
   try {
-    // Verify the token
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const authHeader = req.headers.authorization;
 
-    // Get user from the token and attach to req object
+    // ✅ Ensure token is provided in the correct format
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res
+        .status(401)
+        .json({ message: "Authorization denied, no token provided." });
+    }
+
+    // ✅ Extract token from the header
+    const token = authHeader.split(" ")[1];
+
+    // ✅ Debugging: Log token before verification
+    console.log("Received Token:", token);
+
+    if (!token) {
+      return res.status(401).json({ message: "Unauthorized, token missing." });
+    }
+
+    // ✅ Verify the token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // ✅ Fetch user from the database and attach to request
     req.user = await User.findById(decoded.id).select("-password");
 
     if (!req.user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ message: "User not found." });
     }
 
-    next(); // Proceed to the next middleware or route
+    next(); // ✅ Proceed to the next middleware
   } catch (error) {
     console.error("Token verification failed:", error.message);
-    res
+
+    if (error.name === "TokenExpiredError") {
+      return res
+        .status(401)
+        .json({ message: "Session expired, please log in again." });
+    }
+
+    return res
       .status(401)
-      .json({ message: "Unauthorized, token verification failed" });
+      .json({ message: "Unauthorized, invalid or expired token." });
   }
 };
 
-// Middleware to authorize specific roles
+
+
+// **Role-Based Authorization Middleware**
 export const authorizeRoles = (...roles) => {
   return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
+    if (!req.user || !roles.includes(req.user.role)) {
       return res.status(403).json({
-        message: `Role ${req.user.role} is not authorized to access this resource`,
+        message: `Access denied: Role '${
+          req.user?.role || "Unknown"
+        }' is not authorized.`,
       });
     }
     next();

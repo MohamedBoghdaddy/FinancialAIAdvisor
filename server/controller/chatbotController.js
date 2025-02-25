@@ -178,7 +178,13 @@ const fetchFinanceNews = async () => {
 
 // **Chatbot Handler**
 export const handleChatRequest = async (req, res) => {
-  const { message, userId } = req.body; // Extract userId from request body (if available)
+  const { message } = req.body;
+  const userId = req.user ? req.user._id : null; 
+
+   if (!message) {
+     return res.status(400).json({ message: "Message cannot be empty." });
+   }
+
   const lowerMessage = message.toLowerCase().trim();
 
   if (faqs[lowerMessage]) return res.json({ response: faqs[lowerMessage] });
@@ -232,7 +238,7 @@ export const handleChatRequest = async (req, res) => {
 
     // **Save chat to MongoDB, including userId if found**
     const chatEntry = new ChatModel({
-      userId: userId || null, // Store user ID if available, otherwise set to null
+      userId: userId , // Store user ID if available, otherwise set to null
       message,
       response: responseText,
     });
