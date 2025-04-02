@@ -2,10 +2,9 @@ import React, { useState } from "react";
 import { Navbar, Nav, Container, Modal } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faUser, faSignOutAlt } from "@fortawesome/free-solid-svg-icons";
-import { Link, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { Link as ScrollLink } from "react-scroll";
-// import logo from "../assets/images/logo.png"; // Adjust path as per your project
-import Login from "../LOGIN&REGISTRATION/Login/Login"; // Adjust path to Login component
+import Login from "../LOGIN&REGISTRATION/Login/Login";
 import { useAuthContext } from "../../../context/AuthContext";
 import { useLogout } from "../../../hooks/useLogout.js";
 import "../styles/navbar.css";
@@ -16,8 +15,7 @@ const MiniNavbar = () => {
   const [expanded, setExpanded] = useState(false);
   const navigate = useNavigate();
   const { state } = useAuthContext();
-
-  const { user, isAuthenticated } = state; // Use isAuthenticated
+  const { user, isAuthenticated } = state;
   const { logout } = useLogout();
 
   const handleLoginModalOpen = () => {
@@ -28,7 +26,7 @@ const MiniNavbar = () => {
     setShowLoginModal(false);
   };
 
-  const handleNavCollapse = () => setExpanded(!expanded);
+  const handleNavCollapse = () => setExpanded(false);
 
   const handleLogout = async () => {
     logout();
@@ -38,9 +36,9 @@ const MiniNavbar = () => {
   return (
     <Navbar expand="lg" className="navbar" variant="dark" expanded={expanded}>
       <Container fluid>
-        <Navbar.Brand as={Link} to="/" className="navbar-brand">
+        <Navbar.Brand as={NavLink} to="/" className="navbar-brand">
           <img
-            // src={logo}
+            // src={logo} // Uncomment and add your logo source
             alt="Company Logo"
             style={{ width: "80px", height: "57px", top: 0 }}
           />
@@ -48,37 +46,30 @@ const MiniNavbar = () => {
         <Navbar.Toggle
           aria-controls="basic-navbar-nav"
           className="navbar-toggler"
-          onClick={handleNavCollapse}
+          onClick={() => setExpanded(!expanded)}
         />
         <Navbar.Collapse id="navbarScroll" className="navbar-collapse">
           <Nav className="navbar-nav ms-auto" navbarScroll>
-            <ScrollLink
-              to="hero-section"
+            <Nav.Link
+              as={NavLink}
+              to="/"
               smooth
               className="nav-link"
               onClick={handleNavCollapse}
             >
               HOME
-            </ScrollLink>
-            <ScrollLink
-              to="WhoWeAre"
-              smooth
-              className="nav-link"
-              onClick={handleNavCollapse}
-            >
-              WHO WE ARE
-            </ScrollLink>
-
-            <ScrollLink
+            </Nav.Link>
+         <Nav.Link
+              as={NavLink}
               to="/contact"
               className="nav-link"
               onClick={handleNavCollapse}
             >
               Contact Us
-            </ScrollLink>
+            </Nav.Link>
             {isAuthenticated && user && (
               <Nav.Link
-                as={Link}
+                as={NavLink}
                 to="/Dashboard"
                 className="nav-link"
                 onClick={handleNavCollapse}
@@ -88,37 +79,21 @@ const MiniNavbar = () => {
             )}
 
             {isAuthenticated && user ? (
-              <div
+              <Nav.Link
                 className="nav-link"
                 role="button"
-                tabIndex="0"
                 onClick={handleLogout}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    handleLogout();
-                  }
-                }}
               >
                 <FontAwesomeIcon icon={faSignOutAlt} /> Logout
-              </div>
+              </Nav.Link>
             ) : (
-              <div
+              <Nav.Link
                 className="nav-link"
                 role="button"
-                tabIndex="0"
-                onClick={() => {
-                  handleLoginModalOpen();
-                  handleNavCollapse();
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    handleLoginModalOpen();
-                    handleNavCollapse();
-                  }
-                }}
+                onClick={handleLoginModalOpen}
               >
                 <FontAwesomeIcon icon={faUser} />
-              </div>
+              </Nav.Link>
             )}
           </Nav>
         </Navbar.Collapse>
@@ -127,7 +102,7 @@ const MiniNavbar = () => {
       <Modal show={showLoginModal} onHide={handleLoginModalClose} centered>
         <Modal.Header closeButton></Modal.Header>
         <Modal.Body>
-          <Login onLoginSuccess={handleLoginModalClose} /> {/* Pass callback */}
+          <Login onLoginSuccess={handleLoginModalClose} />
         </Modal.Body>
       </Modal>
     </Navbar>

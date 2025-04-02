@@ -1,6 +1,4 @@
-/* survey.css */
-
-/* General Container */
+/* General Survey Container */
 .survey-container {
   max-width: 600px;
   margin: 50px auto;
@@ -14,22 +12,37 @@
 /* Heading */
 .survey-container h2 {
   font-size: 24px;
-  color: #333;
+  color: #2c3e50;
   margin-bottom: 20px;
 }
 
-/* Form Labels */
+.description {
+  font-size: 14px;
+  color: #7f8c8d;
+  margin-bottom: 20px;
+}
+
+/* Question Block */
+.question-block {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  text-align: left;
+  box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Labels */
 label {
+  display: block;
   font-size: 16px;
   font-weight: 500;
-  color: #333;
-  display: block;
-  text-align: left;
   margin-bottom: 8px;
+  color: #34495e;
 }
 
 /* Input Fields */
-
+input:not(.chat-input),
 select,
 textarea {
   width: 100%;
@@ -40,15 +53,6 @@ textarea {
   font-size: 16px;
   transition: border-color 0.3s ease-in-out;
 }
-input:not(.chat-input), select, textarea {
-    width: 100%;
-    padding: 10px;
-    margin-bottom: 15px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    font-size: 16px;
-    transition: border-color 0.3s ease-in-out;
-}
 
 input:focus,
 select:focus,
@@ -57,32 +61,106 @@ textarea:focus {
   outline: none;
 }
 
-/* Buttons */
+/* Sliders */
+.slider {
+  width: 100%;
+  margin-top: 5px;
+  appearance: none;
+  height: 8px;
+  background: #bdc3c7;
+  border-radius: 5px;
+  outline: none;
+  transition: background 0.3s;
+}
+
+.slider:hover {
+  background: #3498db;
+}
+
+.slider-value {
+  display: block;
+  font-size: 18px;
+  font-weight: bold;
+  margin-top: 5px;
+  color: #2c3e50;
+}
+
+/* Button Styles */
 button {
   width: 100%;
   padding: 12px;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: bold;
   border: none;
   border-radius: 5px;
   cursor: pointer;
   transition: 0.3s ease-in-out;
+  margin-top: 10px;
 }
 
-.bg-blue-500 {
+/* Navigation Buttons */
+.nav-btn {
   background-color: #3498db;
+  color: white;
 }
 
-.bg-blue-500:hover {
+.nav-btn:hover {
   background-color: #2980b9;
 }
 
-.bg-green-500 {
+/* Submit Button */
+.submit-btn {
   background-color: #2ecc71;
+  color: white;
 }
 
-.bg-green-500:hover {
+.submit-btn:hover {
   background-color: #27ae60;
+}
+
+/* Edit Buttons */
+.edit-btn {
+  background-color:  #101c28;
+  color: white;
+  padding: 6px 10px;
+  font-size: 14px;
+  margin-left: 10px;
+  display: inline-block;
+  border-radius: 5px;
+}
+
+.edit-btn:hover {
+  background-color:  #1e3349;
+}
+
+.edit-all-btn {
+  background-color: #a91302;
+  color: white;
+  padding: 12px;
+  font-size: 16px;
+  margin-top: 15px;
+  display: block;
+  border-radius: 5px;
+}
+
+.edit-all-btn:hover {
+  background-color: #d8200c;
+}
+
+/* Submitted Results */
+.submitted-results {
+  text-align: left;
+  font-size: 16px;
+  color: #2c3e50;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 10px;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.submitted-results h3 {
+  text-align: center;
+  margin-bottom: 15px;
 }
 
 /* Responsive Design */
@@ -90,11 +168,16 @@ button {
   .survey-container {
     width: 90%;
     padding: 15px;
-    margin-left: 20%;
   }
 
   button {
     font-size: 16px;
     padding: 10px;
+  }
+
+  .edit-btn,
+  .edit-all-btn {
+    font-size: 14px;
+    padding: 8px;
   }
 }

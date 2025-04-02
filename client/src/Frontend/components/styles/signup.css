@@ -1,7 +1,3 @@
-body {
-  margin: 0;
-}
-
 .main-Container {
   width: 100%;
   min-height: 100vh;
@@ -36,16 +32,16 @@ body {
 
 .left-sign h2 {
   color: #323c43;
-  font-size: 30px;
+  font-size: 36px;
   margin-bottom: 20px;
-  font-family: "Arial", sans-serif;
+  font-family: "Beverly", sans-serif;
 }
 
 .right-sign h1 {
   color: #f7f8f9;
-  font-size: 30px;
+  font-size: 36px;
   margin-bottom: 20px;
-  font-family: "Arial", sans-serif;
+  font-family: "Beverly", sans-serif;
 }
 
 .left-sign {
@@ -53,7 +49,7 @@ body {
 }
 
 .right-sign {
-  background-color: #000000;
+  background-color: #323c43;
 }
 
 .field {
@@ -96,16 +92,18 @@ body {
 }
 
 .show-password {
-  background-color: #504848;
+  background: none;
+  border: none;
   cursor: pointer;
   position: absolute;
   right: 10px;
-  top: 32px; 
-  color: #120d0d;
+  top: 32px; /* Adjusted from 36px to 32px to move it upward */
+  color: #999;
+  margin-left: 10%;
 }
 
 .show-password:hover {
-  color: #0b0707;
+  color: #333;
 }
 
 .gender-container {
@@ -134,7 +132,7 @@ body {
 }
 
 .left_btn {
-  background-color: #000000;
+  background-color: #323c43;
   color: #eef0f1;
 }
 
@@ -152,11 +150,7 @@ body {
 }
 
 .error {
-  color: #e63946;
-}
-
-.success {
-  color: #38a169;
+  color: #323c43;
 }
 
 @media only screen and (max-width: 760px) {
@@ -171,6 +165,6 @@ body {
   }
 
   .right-sign h1 {
-    font-size: 26px;
+    font-size: 30px;
   }
 }
