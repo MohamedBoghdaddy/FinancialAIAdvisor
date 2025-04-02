@@ -102,6 +102,8 @@ export const AuthProvider = ({ children }) => {
     }
   }, [checkAuth]);
 
+
+
   /**
    * ✅ Logout Function
    * - Clears user session from cookies & local storage.
@@ -123,6 +125,9 @@ export const AuthProvider = ({ children }) => {
   return (
     <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
   );
+
+
+
 };
 
 export const useAuthContext = () => {
