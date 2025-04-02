@@ -15,6 +15,7 @@ import AnalyticsReport from "./Frontend/components/Dashboard/analytics";
 import Settings from "./Frontend/components/Dashboard/settings";
 import Profile from "./Frontend/components/Dashboard/profile";
 import AIChat from "./Frontend/components/chatbot/AIChat";
+import Contact from "./Frontend/components/Contact/contact";
 
 function App() {
   return (
@@ -61,12 +62,12 @@ function App() {
           }
         />*/}
         <Route
-          path="/Questionnaire"
+          path="/contact"
           element={
             <>
               <MiniNavbar />
               <Sidebar />
-              <Questionnaire />
+              <Contact />
             </>
           }
         />
