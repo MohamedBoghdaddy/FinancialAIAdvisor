@@ -28,7 +28,7 @@ export const upload = multer({ storage: storage });
 
 // ✅ Generate JWT Token
 const createToken = (user) =>
-  jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: "30d" });
+  jwt.sign({ id: user._id, role: user.role , username: user.username}, JWT_SECRET, { expiresIn: "30d" });
 
 /**
  * ✅ REGISTER USER
