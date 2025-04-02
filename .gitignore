@@ -24,3 +24,5 @@ services/.env
 
 npm-debug.log*
 venv
+_pycache_
+/agent/_pycache_
