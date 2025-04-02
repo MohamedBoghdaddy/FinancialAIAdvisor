@@ -4,7 +4,7 @@ import subprocess
 import uvicorn
 import os
 from dotenv import load_dotenv
-from agent import financial_agent  # Import AI agent logic
+from services.agent.agent import financial_agent  # Import AI agent logic
 
 # ✅ Load environment variables
 load_dotenv(".env")
@@ -26,9 +26,9 @@ class ForecastRequest(BaseModel):
 def forecast(request: ForecastRequest):
     """Runs the corresponding forecasting script based on the type."""
     script_mapping = {
-        "gold": "Gold_Forecasting.py",
-        "real_estate": "Real_Estate_Forecasting.py",
-        "stocks": "Stock_Price_Forecasting.py"
+        "gold": "./gold/Gold_Forecasting.py",
+        "real_estate": "./real_estate/Real_Estate_Forecasting.py",
+        "stocks": "./stock/Stock_Price_Forecasting.py"
     }
 
     script = script_mapping.get(request.forecast_type)
