@@ -57,7 +57,6 @@ const AnalyticsReport = () => {
     fetchAnalytics();
   }, [fetchProfile]);
 
-  // ✅ Chart Data Configuration
   const analyticsChartData = {
     labels: riskToleranceData.map((item) => item._id || "Unknown"),
     datasets: [

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import { useAuthContext } from "../../../context/AuthContext";
 import { toast } from "react-toastify";
@@ -7,233 +7,261 @@ import "../styles/survey.css";
 const API_URL =
   process.env.REACT_APP_API_URL || "http://localhost:4000/api/questionnaire";
 
-const Questionnaire = () => {
-  const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState({});
-  const { state } = useAuthContext();
-  const { user } = state;
+const questions = [
+  { id: "age", text: "What's your age?", type: "number" },
+  {
+    id: "employmentStatus",
+    text: "What's your employment status?",
+    type: "select",
+    options: ["Employed", "Self-employed", "Unemployed", "Student", "Retired"],
+  },
+  { id: "Salary", text: "Your Salary?", type: "number" },
+  {
+    id: "homeOwnership",
+    text: "Do you own or rent your home?",
+    type: "select",
+    options: ["Own", "Rent", "Other"],
+  },
+  {
+    id: "hasDebt",
+    text: "Do you currently have any debts?",
+    type: "select",
+    options: ["Yes", "No"],
+  },
+  {
+    id: "lifestyle",
+    text: "What type of lifestyle best describes you?",
+    type: "select",
+    options: [
+      { label: "Minimalist (low spending, high saving)", value: "Minimalist" },
+      { label: "Balanced (moderate spending & saving)", value: "Balanced" },
+      { label: "Spender (high spending, lower saving)", value: "Spender" },
+    ],
+  },
+  {
+    id: "riskTolerance",
+    text: "How comfortable are you with unpredictable situations?",
+    type: "slider",
+  },
+  {
+    id: "investmentApproach",
+    text: "How do you usually handle a surplus of money?",
+    type: "slider",
+  },
+  {
+    id: "emergencyPreparedness",
+    text: "If a major unexpected expense arises, how prepared do you feel?",
+    type: "slider",
+  },
+  {
+    id: "financialTracking",
+    text: "How often do you research financial trends?",
+    type: "slider",
+  },
+  {
+    id: "futureSecurity",
+    text: "How much do you prioritize future financial security over present comfort?",
+    type: "slider",
+  },
+  {
+    id: "spendingDiscipline",
+    text: "How easily do you say 'no' to unplanned purchases?",
+    type: "slider",
+  },
+  {
+    id: "assetAllocation",
+    text: "If given a large sum of money today, how much would you allocate toward long-term assets?",
+    type: "slider",
+  },
+  {
+    id: "riskTaking",
+    text: "When it comes to financial risks, where do you stand?",
+    type: "slider",
+  },
+  {
+    id: "dependents",
+    text: "Do you have dependents (children, elderly, etc.)?",
+    type: "select",
+    options: ["Yes", "No"],
+  },
+  {
+    id: "financialGoals",
+    text: "Briefly describe your primary financial goals:",
+    type: "textarea",
+  },
+];
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+const Questionnaire = () => {
+  const [step, setStep] = useState(0);
+  const [formData, setFormData] = useState({});
+  const [submittedData, setSubmittedData] = useState(null);
+  const [editMode, setEditMode] = useState(false);
+  const { state } = useAuthContext();
+  const { user } = state || {};
+
+  useEffect(() => {
+    if (!user || !user._id) return;
+
+    const fetchResponses = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/latest`, {
+          withCredentials: true,
+        });
+        if (response.data) {
+          setFormData(response.data);
+          setSubmittedData(response.data);
+        }
+      } catch (error) {
+        console.error("❌ Error fetching responses:", error);
+      }
+    };
+
+    fetchResponses();
+  }, [user?._id]);
+
+  const handleChange = (id, value) => {
+    setFormData((prev) => ({ ...prev, [id]: value }));
   };
 
   const handleNext = () => {
-    setStep((prevStep) => prevStep + 1);
+    if (step < questions.length - 1) setStep((prev) => prev + 1);
+  };
+
+  const handleBack = () => {
+    if (step > 0) setStep((prev) => prev - 1);
   };
 
   const handleSubmit = async () => {
+    if (!user || !user._id) return toast.error("❌ User not authenticated.");
+
     try {
-      const response = await axios.post(
+      await axios.post(
         `${API_URL}/submit`,
         { ...formData, userId: user._id },
         { withCredentials: true }
       );
-
-      toast.success(
-        response.data.message || "Questionnaire submitted successfully"
-      );
-      setStep(1);
-      setFormData({});
+      toast.success("✅ Survey submitted successfully!");
+      setSubmittedData(formData);
+      setEditMode(false);
     } catch (error) {
-      toast.error(
-        error.response?.data.message ||
-          "An error occurred while submitting the questionnaire"
-      );
+      toast.error("❌ Error submitting survey.");
     }
+  };
+
+  const handleEditSpecific = (index) => {
+    setStep(index);
+    setEditMode(true);
+  };
+
+  const handleEditAll = () => {
+    setFormData({});
+    setStep(0);
+    setEditMode(true);
   };
 
   return (
     <div className="survey-container">
-      <h2>Personal Finance & Lifestyle Questionnaire</h2>
+      <h2>📊 Personal Finance & Lifestyle Questionnaire</h2>
+      <p className="description">
+        Adjust the sliders and answer based on your financial habits.
+      </p>
 
-      {step === 1 && (
-        <div>
-          <label>
-            What's your age?
+      {submittedData && !editMode ? (
+        <div className="submitted-results">
+          <h3>📌 Your Responses</h3>
+          {questions.map((q, index) => (
+            <p key={q.id}>
+              <strong>{q.text}:</strong> {submittedData[q.id] || "Not answered"}{" "}
+              <button
+                onClick={() => handleEditSpecific(index)}
+                className="edit-btn"
+              >
+                ✏️ Edit
+              </button>
+            </p>
+          ))}
+          <button onClick={handleEditAll} className="edit-all-btn">
+            📝 Edit All
+          </button>
+        </div>
+      ) : (
+        <div className="question-block">
+          <label>{questions[step].text}</label>
+
+          {questions[step].type === "number" && (
             <input
               type="number"
-              name="age"
-              onChange={handleChange}
-              className="block w-full p-2 border rounded"
+              name={questions[step].id}
+              value={formData[questions[step].id] || ""}
+              onChange={(e) => handleChange(questions[step].id, e.target.value)}
+              className="input-field"
             />
-          </label>
-          <button
-            onClick={handleNext}
-            className="mt-2 bg-blue-500 text-white p-2 rounded-lg"
-          >
-            Next
-          </button>
-        </div>
-      )}
+          )}
 
-      {step === 2 && (
-        <div>
-          <label>
-            What's your employment status?
+          {questions[step].type === "select" && (
             <select
-              name="employmentStatus"
-              onChange={handleChange}
-              className="block w-full p-2 border rounded"
+              name={questions[step].id}
+              value={formData[questions[step].id] || ""}
+              onChange={(e) => handleChange(questions[step].id, e.target.value)}
+              className="input-field"
             >
               <option value="">Select</option>
-              <option value="employed">Employed</option>
-              <option value="self-employed">Self-employed</option>
-              <option value="unemployed">Unemployed</option>
-              <option value="student">Student</option>
-              <option value="retired">Retired</option>
+              {questions[step].options.map((option) => (
+                <option
+                  key={option.value || option}
+                  value={option.value || option}
+                >
+                  {option.label || option}
+                </option>
+              ))}
             </select>
-          </label>
-          <button
-            onClick={handleNext}
-            className="mt-2 bg-blue-500 text-white p-2 rounded-lg"
-          >
-            Next
-          </button>
-        </div>
-      )}
+          )}
 
-      {step === 3 && (
-        <div>
-          <label>
-            Do you own or rent your home?
-            <select
-              name="homeOwnership"
-              onChange={handleChange}
-              className="block w-full p-2 border rounded"
-            >
-              <option value="">Select</option>
-              <option value="own">Own</option>
-              <option value="rent">Rent</option>
-              <option value="other">Other</option>
-            </select>
-          </label>
-          <button
-            onClick={handleNext}
-            className="mt-2 bg-blue-500 text-white p-2 rounded-lg"
-          >
-            Next
-          </button>
-        </div>
-      )}
+          {questions[step].type === "slider" && (
+            <>
+              <input
+                type="range"
+                min="1"
+                max="10"
+                step="1"
+                value={formData[questions[step].id] || 5}
+                onChange={(e) =>
+                  handleChange(questions[step].id, e.target.value)
+                }
+                className="slider"
+              />
+              <span className="slider-value">
+                {formData[questions[step].id] || 5}
+              </span>
+            </>
+          )}
 
-      {step === 4 && (
-        <div>
-          <label>
-            Do you currently have any debts?
-            <select
-              name="hasDebt"
-              onChange={handleChange}
-              className="block w-full p-2 border rounded"
-            >
-              <option value="">Select</option>
-              <option value="yes">Yes</option>
-              <option value="no">No</option>
-            </select>
-          </label>
-          <button
-            onClick={handleNext}
-            className="mt-2 bg-blue-500 text-white p-2 rounded-lg"
-          >
-            Next
-          </button>
-        </div>
-      )}
-
-      {step === 5 && (
-        <div>
-          <label>
-            What type of lifestyle best describes you?
-            <select
-              name="lifestyle"
-              onChange={handleChange}
-              className="block w-full p-2 border rounded"
-            >
-              <option value="">Select</option>
-              <option value="minimalist">
-                Minimalist (low spending, high saving)
-              </option>
-              <option value="balanced">
-                Balanced (moderate spending & saving)
-              </option>
-              <option value="spender">
-                Spender (high spending, lower saving)
-              </option>
-            </select>
-          </label>
-          <button
-            onClick={handleNext}
-            className="mt-2 bg-blue-500 text-white p-2 rounded-lg"
-          >
-            Next
-          </button>
-        </div>
-      )}
-
-      {step === 6 && (
-        <div>
-          <label>
-            How would you describe your risk tolerance for investments?
-            <select
-              name="riskTolerance"
-              onChange={handleChange}
-              className="block w-full p-2 border rounded"
-            >
-              <option value="">Select</option>
-              <option value="low">Low (prefer stability)</option>
-              <option value="medium">Medium (balanced risk/reward)</option>
-              <option value="high">High (open to risk)</option>
-            </select>
-          </label>
-          <button
-            onClick={handleNext}
-            className="mt-2 bg-green-500 text-white p-2 rounded-lg"
-          >
-            Next
-          </button>
-        </div>
-      )}
-
-      {step === 7 && (
-        <div>
-          <label>
-            Do you have dependents (children, elderly, etc.)?
-            <select
-              name="dependents"
-              onChange={handleChange}
-              className="block w-full p-2 border rounded"
-            >
-              <option value="">Select</option>
-              <option value="yes">Yes</option>
-              <option value="no">No</option>
-            </select>
-          </label>
-          <button
-            onClick={handleNext}
-            className="mt-2 bg-blue-500 text-white p-2 rounded-lg"
-          >
-            Next
-          </button>
-        </div>
-      )}
-
-      {step === 8 && (
-        <div>
-          <label>
-            Briefly describe your primary financial goals:
+          {questions[step].type === "textarea" && (
             <textarea
-              name="financialGoals"
-              onChange={handleChange}
-              className="block w-full p-2 border rounded"
-              placeholder="E.g., retirement, education, buying a house, etc."
+              name={questions[step].id}
+              value={formData[questions[step].id] || ""}
+              onChange={(e) => handleChange(questions[step].id, e.target.value)}
+              className="input-field"
+              placeholder="Write here..."
             />
-          </label>
-          <button
-            onClick={handleSubmit}
-            className="mt-2 bg-green-500 text-white p-2 rounded-lg"
-          >
-            Submit
-          </button>
+          )}
+
+          <div className="button-group">
+            {step > 0 && (
+              <button onClick={handleBack} className="nav-btn back">
+                ⬅️ Back
+              </button>
+            )}
+            {step < questions.length - 1 ? (
+              <button onClick={handleNext} className="nav-btn next">
+                Next ➡️
+              </button>
+            ) : (
+              <button onClick={handleSubmit} className="submit-btn">
+                Submit ✅
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>

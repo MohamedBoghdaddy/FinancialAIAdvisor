@@ -15,7 +15,6 @@ const Home = () => {
       <section id="WhoWeAre">
         <WhoWeAre />
       </section>
-   
       <CallToActionSection />
     </div>
   );
