@@ -1,7 +1,6 @@
-body {
-  margin: 0;
-}
-
+/* ==============================
+   ✅ Layout & Containers
+================================= */
 .main-container {
   width: 100%;
   min-height: 100vh;
@@ -19,12 +18,15 @@ body {
   width: 100%;
   display: flex;
   flex-direction: row;
-  background-color: #000000;
+  background-color: #323c43;
   border-radius: 10px;
   box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.1);
   overflow: hidden;
 }
 
+/* ==============================
+   ✅ Sections (Left & Right)
+================================= */
 .left-login,
 .right-login,
 .left-signup,
@@ -37,6 +39,7 @@ body {
   padding: 40px;
 }
 
+/* 🌟 Background Colors */
 .left-login,
 .left-signup {
   background-color: #eceae6;
@@ -44,9 +47,12 @@ body {
 
 .right-login,
 .right-signup {
-  background-color: #000000;
+  background-color: #323c43;
 }
 
+/* ==============================
+   ✅ Titles
+================================= */
 .left-login h2,
 .left-signup h2 {
   color: #323c43;
@@ -54,6 +60,7 @@ body {
   margin-bottom: 20px;
   font-family: "Beverly", sans-serif;
 }
+
 .right-login h1,
 .right-signup h1 {
   color: #f7f8f9;
@@ -62,6 +69,9 @@ body {
   font-family: "Beverly", sans-serif;
 }
 
+/* ==============================
+   ✅ Form Fields
+================================= */
 .field {
   display: flex;
   align-items: center;
@@ -72,7 +82,7 @@ body {
   font-size: 16px;
   margin-right: 10px;
   color: #333;
-  min-width: 100px; /* Adjust based on your preference */
+  min-width: 100px;
   text-align: right;
 }
 
@@ -97,32 +107,25 @@ body {
   outline: none;
 }
 
+/* ==============================
+   ✅ Password Field & Toggle
+================================= */
 .password-container {
   position: relative;
   width: 100%;
 }
 
 .show-password {
-  background-color: #504848;
+  background: none;
   border: none;
   cursor: pointer;
   position: absolute;
-  right: 10px;
-  top: 40%; /* Adjusted from 50% to 40% */
-  transform: translateY(-50%);
-  font-size: 18px;
-  color: #333;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 5px;
-  border-radius: 50%;
-  transition: background-color 0.3s, color 0.3s;
-
+  right: 100px;
+  top: 32px;
+  color: #999;
 }
 
 .show-password:hover {
-  background-color: #938282;
   color: #000;
 }
 
@@ -130,6 +133,9 @@ body {
   font-size: 1.2em;
 }
 
+/* ==============================
+   ✅ Buttons (Login & Signup)
+================================= */
 .green_btn,
 .white_btn,
 .left_btn,
@@ -164,15 +170,25 @@ body {
   background-color: #a9a69b;
 }
 
+/* ==============================
+   ✅ Error & Success Messages
+================================= */
 .error {
   color: #323c43;
 }
 
+/* ==============================
+   ✅ Responsive Design
+================================= */
 @media only screen and (max-width: 760px) {
   .login-container,
   .signup-container {
     flex-direction: column;
     width: 90%;
+  }
+
+  .show-password {
+    margin-left: 20%;
   }
 
   .left-login,

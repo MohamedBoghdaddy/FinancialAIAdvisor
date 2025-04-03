@@ -8,6 +8,7 @@
   box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.15);
   font-family: "Arial", sans-serif;
   text-align: center;
+  margin-left: 30%;
 }
 
 /* 📋 Questionnaire Box */
@@ -108,7 +109,6 @@
   background-color: #ccc;
   cursor: not-allowed;
 }
-
 
 /* 📱 Responsive Design */
 @media (max-width: 768px) {
