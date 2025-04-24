@@ -2,7 +2,7 @@ import React from "react";
 import { Container, Row, Col, Button } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import "../styles/Home.css";
-// import logoblack from "../assets/images/logo-black.png";
+
 
 const HeroSection = () => (
   <div className="hero-section">
@@ -10,9 +10,9 @@ const HeroSection = () => (
       <Row>
         <Col md={6}>
           <img
-            // src={logoblack}
-            alt="Financial Advisor AI logo"
-            style={{ width: "500px", height: "auto" }}
+            src="logo192.png"
+            alt="Financial logo192.png"
+            style={{ width: "400px", height: "auto" }}
           />
         </Col>
         <Col md={6}>

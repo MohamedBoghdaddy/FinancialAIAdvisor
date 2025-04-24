@@ -38,7 +38,7 @@ const MiniNavbar = () => {
       <Container fluid>
         <Navbar.Brand as={NavLink} to="/" className="navbar-brand">
           <img
-            // src={logo} // Uncomment and add your logo source
+             src="logo192.png" 
             alt="Company Logo"
             style={{ width: "80px", height: "57px", top: 0 }}
           />

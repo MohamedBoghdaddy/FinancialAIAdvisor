@@ -73,9 +73,7 @@ const Sidebar = () => {
   return (
     <div className="sidebar">
       <div className="sidebar-header">
-        <h2>
-          {isAuthenticated && user ? `Hello, ${user.username}` : "Welcome"}
-        </h2>
+        <h2>{isAuthenticated && user ? `Hello, ${user.username}` : "Welcome"}</h2>
 
         {isAuthenticated && (
           <div className="profile-photo-section">
@@ -121,7 +119,9 @@ const Sidebar = () => {
                         max="3"
                         step="0.1"
                         value={scale}
-                        onChange={(e) => setScale(parseFloat(e.target.value))}
+                        onChange={(e) =>
+                          setScale(parseFloat(e.target.value))
+                        }
                       />
                       <Button onClick={() => setRotate((r) => r + 90)}>
                         Rotate
@@ -177,6 +177,16 @@ const Sidebar = () => {
         <li>
           <Link to="/AIChat">
             <FaCog /> AIChat
+          </Link>
+        </li>
+        <li>
+          <Link to="/LifeManagement">
+            <FaClipboardList /> Life Management
+          </Link>
+        </li>
+        <li>
+          <Link to="/statistics">
+            <FaChartLine /> Statistics
           </Link>
         </li>
       </ul>

@@ -1,18 +1,18 @@
 import React from "react";
 import { Container, Row, Col } from "react-bootstrap";
-// import logo from "../assets/images/logo.png";
+
 import "../styles/Home.css";
 
 const StorytellingSection = () => (
   <Container className="storytelling-section" id="About us">
     <Row>
-      <Col md={6}>
-        <img
-          // src={logo}
-          alt="AI Financial Advisor logo"
-          style={{ width: "400px", height: "auto" }}
-        />
-      </Col>
+    <Col md={6} className="text-center">
+    <img
+      src="ai-financial-advisor_0.png"
+      alt="AI Financial Advisor"
+      style={{ width: "100%", maxWidth: "650px", height: "450px", borderRadius: "10px" }}
+    />
+  </Col>
       <Col md={6}>
         <h2>Our Mission</h2>
         <p>
