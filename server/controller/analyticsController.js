@@ -60,3 +60,21 @@ export const getRiskToleranceAnalytics = async (req, res) => {
       .json({ message: "Failed to fetch risk tolerance analytics", error });
   }
 };
+
+//Statistics
+export const getUserStatistics = async (req, res) => {
+  try {
+    const totalUsers = await User.countDocuments();
+    const totalAdmins = await User.countDocuments({ role: "admin" });
+    const totalRegularUsers = await User.countDocuments({ role: "user" });
+
+    res.json({
+      totalUsers,
+      totalAdmins,
+      totalRegularUsers,
+    });
+  } catch (err) {
+    console.error("Error in getUserStatistics:", err.message);
+    res.status(500).json({ error: "Failed to load statistics" });
+  }
+};
