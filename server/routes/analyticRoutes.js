@@ -3,6 +3,7 @@ import {
   getUserAnalytics,
   getLifestyleAnalytics,
   getRiskToleranceAnalytics,
+  getUserStatistics,
 } from "../controller/analyticsController.js";
 import { auth } from "../Middleware/authMiddleware.js";
 
@@ -16,5 +17,8 @@ router.get("/lifestyle", getLifestyleAnalytics);
 
 // Route to get overall risk tolerance distribution analytics
 router.get("/risk-tolerance", getRiskToleranceAnalytics);
+
+// Route to get statistics
+router.get("/statistics", getUserStatistics);
 
 export default router;

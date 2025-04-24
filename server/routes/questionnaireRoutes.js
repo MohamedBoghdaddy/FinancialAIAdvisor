@@ -4,7 +4,8 @@ import {
   getUserQuestionnaire,
 } from "../controller/questionnaireController.js";
 import { auth } from "../Middleware/authMiddleware.js";
-import Questionnaire from "../models/questionnaireModel.js"; // ✅ Fixed missing import
+import Questionnaire from "../models/questionnaireModel.js";
+import { getQuestionnairesByUser } from "../controller/questionnaireController.js";
 
 const router = express.Router();
 
@@ -32,5 +33,7 @@ router.get("/latest", auth, async (req, res) => {
     res.status(500).json({ message: "Internal server error." });
   }
 });
+
+router.get("/user/:userId", getQuestionnairesByUser);
 
 export default router;
