@@ -14,7 +14,44 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
-import "../styles/Analytics.css";
+import "../styles/Analytics.css"; // Ensure you have this imported
+import { BsArrowUp, BsArrowDown } from "react-icons/bs";
+import Badge from "../../../ui/badge/Badge";
+import amazon from "../../../assets/icons8-amazon-100.svg";
+import apple from "../../../assets/icons8-apple-inc-100.svg";
+import google from "../../../assets/icons8-google-96.svg";
+import meta from "../../../assets/icons8-meta-96.svg";
+import tesla from "../../../assets/icons8-tesla-96.svg";
+import netflix from "../../../assets/icons8-netflix-80.svg";
+
+// Stock tickers
+const stockSymbols = [
+  "AAPL",
+  "META",
+  "AMZN",
+  "NFLX",
+  "GOOGL",
+  "MSFT",
+  "TSLA",
+  "NVDA",
+  "BRK-B",
+  "JPM",
+  "V",
+  "JNJ",
+  "WMT",
+  "UNH",
+  "PG",
+];
+
+// Company logos mapping
+const stockIcons = {
+  AAPL: apple,
+  AMZN: amazon,
+  GOOGL: google,
+  META: meta,
+  TSLA: tesla,
+  NFLX: netflix,
+};
 
 ChartJS.register(
   CategoryScale,
@@ -28,11 +65,12 @@ ChartJS.register(
 const API_URL =
   process.env.REACT_APP_API_URL || "http://localhost:4000/api/analytics";
 
-const AnalyticsReport = () => {
+export default function AnalyticsReport() {
   const { state, fetchProfile, handleDownload } = useDashboard();
   const [loading, setLoading] = useState(true);
   const [riskToleranceData, setRiskToleranceData] = useState([]);
   const [lifestyleData, setLifestyleData] = useState([]);
+  const [metrics, setMetrics] = useState({});
 
   useEffect(() => {
     const fetchAnalytics = async () => {
@@ -56,6 +94,41 @@ const AnalyticsReport = () => {
     fetchProfile();
     fetchAnalytics();
   }, [fetchProfile]);
+
+  useEffect(() => {
+    const fetchStockData = async () => {
+      const results = {};
+
+      for (const symbol of stockSymbols) {
+        try {
+          const res = await axios.get("http://localhost:8000/historical", {
+            params: { symbol, period: "1d" },
+          });
+
+          const data = res.data.data;
+          const closePrices = data
+            .map((d) => d.Close ?? d.close)
+            .filter((p) => typeof p === "number");
+
+          if (closePrices.length >= 2) {
+            const latest = closePrices[closePrices.length - 1];
+            const previous = closePrices[closePrices.length - 2];
+            const change = ((latest - previous) / previous) * 100;
+            results[symbol] = {
+              latest: Number(latest.toFixed(2)),
+              change: Number(change.toFixed(2)),
+            };
+          }
+        } catch (err) {
+          console.error(`❌ Failed to fetch data for ${symbol}:`, err);
+        }
+      }
+
+      setMetrics(results);
+    };
+
+    fetchStockData();
+  }, []);
 
   const analyticsChartData = {
     labels: riskToleranceData.map((item) => item._id || "Unknown"),
@@ -138,6 +211,34 @@ const AnalyticsReport = () => {
           <p>No lifestyle data available.</p>
         )}
 
+        {/* ✅ Stock Metrics Section */}
+        <h2>Tracked Stocks</h2>
+        <div className="grid-container">
+          {Object.entries(metrics).map(([symbol, { latest, change }]) => (
+            <div key={symbol} className="metric-card">
+              <div className="metric-header">
+                <div className="metric-info">
+                  {stockIcons[symbol] && (
+                    <img
+                      src={stockIcons[symbol]}
+                      alt={`${symbol} logo`}
+                      className="symbol-icon"
+                    />
+                  )}
+                  <h4 className="symbol-name">{symbol}</h4>
+                </div>
+                <Badge
+                  className={change >= 0 ? "badge-success" : "badge-error"}
+                >
+                  {change >= 0 ? <BsArrowUp /> : <BsArrowDown />}
+                  {Math.abs(change)}%
+                </Badge>
+              </div>
+              <div className="price">${latest}</div>
+            </div>
+          ))}
+        </div>
+
         {/* ✅ Reports Section */}
         <h2>Generated Reports</h2>
         <div className="report-container">
@@ -166,6 +267,4 @@ const AnalyticsReport = () => {
       </div>
     </div>
   );
-};
-
-export default AnalyticsReport;
+}
