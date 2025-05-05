@@ -105,6 +105,91 @@
   background-color: #2980b9;
 }
 
+/* Container for the grid layout */
+.grid-container {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: space-around;
+  margin-top: 30px;
+}
+
+/* Each metric card */
+.metric-card {
+  border-radius: 1rem;
+  border: 1px solid #e5e7eb; /* Tailwind: border-gray-200 */
+  background-color: #ffffff;
+  padding: 1.25rem;
+  width: 250px; /* You can adjust the width as needed */
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  transition: transform 0.2s ease-in-out;
+}
+
+/* Metric card hover effect */
+.metric-card:hover {
+  transform: scale(1.05);
+}
+
+/* Flex container for item header */
+.metric-header {
+  display: flex;
+  justify-content:center;
+  align-items: center;
+}
+
+/* Flex container for icon and text */
+.metric-info {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.metric-info img {
+  width: 1.5rem; /* Tailwind: w-6 */
+  height: 1.5rem; /* Tailwind: h-6 */
+}
+
+/* Text for the symbol name */
+.symbol-name {
+  font-size: 0.875rem; /* Tailwind: text-sm */
+  color: #6b7280; /* Tailwind: text-gray-500 */
+}
+
+/* Badge for change */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  font-weight: 500;
+}
+
+/* Badge success color */
+.badge-success {
+  background-color: #16a34a; /* Tailwind: bg-green-600 */
+  color: white;
+}
+
+/* Badge error color */
+.badge-error {
+  background-color: #e11d48; /* Tailwind: bg-red-600 */
+  color: white;
+}
+
+/* Font styles for the price */
+.price {
+  margin-top: 0.75rem;
+  font-weight: 700;
+  color: #1f2937; /* Tailwind: text-gray-800 */
+  font-size: 1.25rem; /* Tailwind: text-xl */
+}
+
+.dark .price {
+  color: #ffffff; /* Tailwind: dark:text-white/90 */
+}
+
 /* Responsive Design */
 @media (max-width: 1024px) {
   .analytics-container {
@@ -119,7 +204,7 @@
 @media (max-width: 768px) {
   .analytic-container {
     padding: 15px;
-    margin-left: 25%;
+    margin-left: 35%;
   }
 
   .report-list {
