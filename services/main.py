@@ -1,70 +1,54 @@
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-import subprocess
-import uvicorn
+from fastapi.middleware.cors import CORSMiddleware
+from transformers import AutoModelForCausalLM, AutoTokenizer
+import torch
 import os
-from dotenv import load_dotenv
-from services.agent.agent import financial_agent  # Import AI agent logic
 
-# ✅ Load environment variables
-load_dotenv(".env")
+# Load your fine-tuned Phi-2 model
+MODEL_PATH = "Phi-Model/phi2-finetuned"
 
-app = FastAPI(title="Financial Advisor AI")
+try:
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH, trust_remote_code=True)
+    model = AutoModelForCausalLM.from_pretrained(MODEL_PATH, trust_remote_code=True)
+    model.eval()
+    print("✅ Fine-tuned Phi-2 model loaded.")
+except Exception as e:
+    raise RuntimeError(f"❌ Failed to load Phi-2 model from {MODEL_PATH}: {e}")
 
-# ✅ Define Input Model for Chat Requests
-class ChatRequest(BaseModel):
-    userId: str
-    salary: float
-    message: str
+# Initialize FastAPI app
+app = FastAPI(title="AI Financial Advisor")
 
-# ✅ Define Input Model for Forecast Requests
-class ForecastRequest(BaseModel):
-    forecast_type: str
+# Enable CORS for your frontend (adjust origins as needed)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Use specific origin in production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-# ✅ API Endpoints for Forecast Models
-@app.post("/predict")
-def forecast(request: ForecastRequest):
-    """Runs the corresponding forecasting script based on the type."""
-    script_mapping = {
-        "gold": "./gold/Gold_Forecasting.py",
-        "real_estate": "./real_estate/Real_Estate_Forecasting.py",
-        "stocks": "./stock/Stock_Price_Forecasting.py"
-    }
+# Include the custom logic routes from all services
+from stock import router as stock_router
+from gold import router as gold_router
+from real_estate import router as real_estate_router
+from agent import router as agent_router
+from DPhi_Model import router as phi_model_router
 
-    script = script_mapping.get(request.forecast_type)
+# Add routers for each service folder
+app.include_router(stock_router, prefix="/stock", tags=["Stock"])
+app.include_router(gold_router, prefix="/gold", tags=["Gold"])
+app.include_router(real_estate_router, prefix="/realestate", tags=["Real Estate"])
+app.include_router(agent_router, prefix="/agent", tags=["Agent"])
+app.include_router(phi_model_router, prefix="/phi-model", tags=["Phi-Model"])
 
-    if not script:
-        raise HTTPException(status_code=400, detail="Invalid forecast type")
-
+# Route for prompting the Phi model directly
+@app.post("/ask")
+async def ask_phi(prompt: str):
     try:
-        result = subprocess.run(
-            ["python", f"services/{script}"], 
-            capture_output=True, 
-            text=True, 
-            check=True
-        )
-        return {"forecast": result.stdout.strip()}
-    except subprocess.CalledProcessError as e:
-        raise HTTPException(status_code=500, detail=f"Forecasting error: {e.stderr}")
-
-# ✅ AI Chat Endpoint
-@app.post("/api/chat")
-def chat_with_ai(request: ChatRequest):
-    """Handles AI financial chat responses."""
-    if not request.userId or not request.salary or not request.message:
-        raise HTTPException(status_code=400, detail="Missing userId, salary, or message")
-
-    try:
-        response = financial_agent(request.userId, request.salary, request.message)
+        inputs = tokenizer(prompt, return_tensors="pt")
+        with torch.no_grad():
+            outputs = model.generate(**inputs, max_length=200, do_sample=True)
+        response = tokenizer.decode(outputs[0], skip_special_tokens=True)
         return {"response": response}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"AI Processing Error: {str(e)}")
-
-# ✅ Home Route
-@app.get("/")
-def home():
-    return {"message": "Financial AI Advisor API is running!"}
-
-# ✅ Run Server with Configurable Port
-if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=int(os.getenv("PORT", 8000)))
+        raise HTTPException(status_code=500, detail=f"Model inference failed: {e}")
