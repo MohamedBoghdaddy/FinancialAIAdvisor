@@ -1,0 +1,40 @@
+# 🔧 Backend APIs
+fastapi
+flask
+uvicorn
+pydantic
+requests
+
+# 🧠 Machine Learning / Deep Learning
+torch
+torchvision
+torchaudio
+tensorflow
+keras
+numpy
+scipy
+scikit-learn
+pandas
+statsmodels
+prophet
+matplotlib
+seaborn
+
+
+# 🤖 Transformers & Optimization
+transformers
+accelerate
+bitsandbytes
+sentence-transformers
+textblob
+peft
+
+# 🗃️ MongoDB Integration
+pymongo
+motor
+
+# 🔐 Environment Management
+python-dotenv
+
+# 🧠 Optional: GPU monitoring (optional, comment out if not used)
+GPUtil
