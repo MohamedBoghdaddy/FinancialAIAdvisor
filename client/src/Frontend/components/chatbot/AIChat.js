@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  FormEvent,
+} from "react";
 import Cookies from "js-cookie";
 import axios from "axios";
 import { FaStopCircle, FaCopy, FaLanguage } from "react-icons/fa";
@@ -8,7 +14,8 @@ import { useAuthContext } from "../../../context/AuthContext";
 import { ErrorBoundary } from "react-error-boundary";
 import "../styles/AIChat.css";
 
-const API_URL = "http://localhost:8000/phi-model";
+const API_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+
 const languageOptions = [
   { label: "Arabic", value: "ar" },
   { label: "Spanish", value: "es" },
@@ -102,9 +109,7 @@ const AIChat = () => {
       const res = await axios.post(
         `${API_URL}/analyze_profile`,
         {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       const full = res.data.response;
       const short = full.split("\n").slice(0, 3).join(" ");
