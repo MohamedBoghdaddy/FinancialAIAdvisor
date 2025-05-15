@@ -1,4 +1,5 @@
 import React from "react";
+import { Container } from "react-bootstrap";
 import HeroSection from "./HeroSection";
 import StorytellingSection from "./StorytellingSection";
 import CallToActionSection from "./CallToActionSection";
@@ -7,15 +8,30 @@ import WhoWeAre from "./WhoWeAre";
 
 const Home = () => {
   return (
-    <div className="full-page">
-      <section id="hero-section">
-        <HeroSection />
+    <div className="home-page">
+      <section id="hero-section" className="section">
+        <Container fluid className="px-0">
+          <HeroSection />
+        </Container>
       </section>
-      <StorytellingSection />
-      <section id="WhoWeAre">
-        <WhoWeAre />
+
+      <section id="storytelling" className="section">
+        <Container>
+          <StorytellingSection />
+        </Container>
       </section>
-      <CallToActionSection />
+
+      <section id="about" className="section bg-light">
+        <Container>
+          <WhoWeAre />
+        </Container>
+      </section>
+
+      <section id="cta" className="section">
+        <Container>
+          <CallToActionSection />
+        </Container>
+      </section>
     </div>
   );
 };

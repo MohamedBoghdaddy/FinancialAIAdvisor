@@ -15,7 +15,7 @@ const questions = [
     type: "select",
     options: ["Employed", "Self-employed", "Unemployed", "Student", "Retired"],
   },
-  { id: "Salary", text: "Your Salary?", type: "number" },
+  { id: "salary", text: "Your Salary?", type: "number" },
   {
     id: "homeOwnership",
     text: "Do you own or rent your home?",
@@ -100,13 +100,16 @@ const Questionnaire = () => {
   const { user } = state || {};
 
   useEffect(() => {
-    if (!user || !user._id) return;
+    if (!user || !user.token) return;
 
     const fetchResponses = async () => {
       try {
         const response = await axios.get(`${API_URL}/latest`, {
-          withCredentials: true,
+          headers: {
+            Authorization: `Bearer ${user.token}`,
+          },
         });
+
         if (response.data) {
           setFormData(response.data);
           setSubmittedData(response.data);
@@ -117,7 +120,7 @@ const Questionnaire = () => {
     };
 
     fetchResponses();
-  }, [user?._id]);
+  }, [user]); // ✅ fixed dependency
 
   const handleChange = (id, value) => {
     setFormData((prev) => ({ ...prev, [id]: value }));
@@ -132,18 +135,22 @@ const Questionnaire = () => {
   };
 
   const handleSubmit = async () => {
-    if (!user || !user._id) return toast.error("❌ User not authenticated.");
+    if (!user || !user.token) return toast.error("❌ User not authenticated.");
 
     try {
-      await axios.post(
-        `${API_URL}/submit`,
-        { ...formData, userId: user._id },
-        { withCredentials: true }
-      );
+      await axios.post(`${API_URL}/submit`, formData, {
+        headers: {
+          Authorization: `Bearer ${user.token}`,
+        },
+      });
       toast.success("✅ Survey submitted successfully!");
       setSubmittedData(formData);
       setEditMode(false);
     } catch (error) {
+      console.error(
+        "❌ Error submitting:",
+        error.response?.data || error.message
+      );
       toast.error("❌ Error submitting survey.");
     }
   };

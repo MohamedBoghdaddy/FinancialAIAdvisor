@@ -12,14 +12,16 @@ const Profile = () => {
     email: "",
     income: "",
     financialGoals: "",
+    age: "",
+    occupation: "",
   });
 
-  // Load profile data when the component mounts
+  // Fetch profile data on mount
   useEffect(() => {
     fetchProfile();
-  }, [fetchProfile]);
+  }, []);
 
-  // Set form data when profile is available
+  // Sync state.profile to form
   useEffect(() => {
     if (state.profile) {
       setFormData({
@@ -27,17 +29,16 @@ const Profile = () => {
         email: state.profile.email || "",
         income: state.profile.income || "",
         financialGoals: state.profile.financialGoals || "",
+        age: state.profile.age || "",
+        occupation: state.profile.occupation || "",
       });
     }
   }, [state.profile]);
 
-  const handleEditToggle = () => {
-    setIsEditing(!isEditing);
-  };
+  const handleEditToggle = () => setIsEditing(!isEditing);
 
-  const handleChange = (e) => {
+  const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
 
   const handleSave = async () => {
     try {
@@ -45,8 +46,8 @@ const Profile = () => {
       toast.success("Profile updated successfully.");
       setIsEditing(false);
     } catch (error) {
-      toast.error("Error updating profile.");
       console.error("Error updating profile:", error);
+      toast.error("Failed to update profile.");
     }
   };
 
@@ -56,6 +57,7 @@ const Profile = () => {
       {state.profile ? (
         <div className="profile-card">
           <BsPersonCircle className="profile-icon" />
+
           {isEditing ? (
             <div className="profile-edit">
               <input
@@ -77,13 +79,27 @@ const Profile = () => {
                 name="income"
                 value={formData.income}
                 onChange={handleChange}
-                placeholder="Enter your monthly income"
+                placeholder="Monthly income"
+              />
+              <input
+                type="number"
+                name="age"
+                value={formData.age}
+                onChange={handleChange}
+                placeholder="Your age"
+              />
+              <input
+                type="text"
+                name="occupation"
+                value={formData.occupation}
+                onChange={handleChange}
+                placeholder="Your occupation"
               />
               <textarea
                 name="financialGoals"
                 value={formData.financialGoals}
                 onChange={handleChange}
-                placeholder="Enter your financial goals (e.g., Save for retirement, Invest in stocks)"
+                placeholder="E.g. Save for retirement, invest in stocks..."
               />
               <button onClick={handleSave}>Save</button>
             </div>
@@ -95,6 +111,8 @@ const Profile = () => {
               <p>
                 🎯 Financial Goals: {state.profile.financialGoals || "Not set"}
               </p>
+              <p>🎂 Age: {state.profile.age || "Not set"}</p>
+              <p>👨‍💼 Occupation: {state.profile.occupation || "Not set"}</p>
               <button onClick={handleEditToggle} className="edit-button">
                 <BsPencilSquare /> Edit
               </button>

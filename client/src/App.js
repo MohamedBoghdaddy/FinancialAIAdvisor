@@ -20,7 +20,7 @@ import Profile from "./Frontend/components/Dashboard/profile";
 import AIChat from "./Frontend/components/chatbot/AIChat";
 import Contact from "./Frontend/components/Contact/contact";
 import LifeManagement from "./Frontend/components/Dashboard/lifemanagement";
-import StatisticsPage from "./Frontend/components/Dashboard/statistics.js";
+import StatisticsPage from "./Frontend/components/Dashboard/Statistics.js";
 import AdminDashboard from "./Frontend/components/Dashboard/AdminDashboard";
 import UserDetails from "./Frontend/components/Dashboard/UserDetails";
 import ProtectedRoute from "./Frontend/components/Auth/ProtectedRoute";
@@ -88,6 +88,19 @@ function App() {
                   <MiniNavbar />
                   <Sidebar />
                   <Settings />
+                  <Footer />
+                </>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/contact"
+            element={
+              <ProtectedRoute>
+                <>
+                  <MiniNavbar />
+                  <Sidebar />
+                  <Contact />
                   <Footer />
                 </>
               </ProtectedRoute>

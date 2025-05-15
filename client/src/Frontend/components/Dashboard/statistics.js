@@ -3,6 +3,37 @@ import Chart from "react-apexcharts";
 import axios from "axios";
 import "../styles/statistics.css"; // make sure this path is correct
 
+// Create axios instance with base configuration
+const api = axios.create({
+  baseURL: "http://localhost:8000",
+  timeout: 10000, // 10 second timeout
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
+// Add request interceptor to handle auth token
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Add response interceptor to handle errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.code === "ERR_NETWORK") {
+      console.error(
+        "Network Error: Please check if the backend server is running"
+      );
+    }
+    return Promise.reject(error);
+  }
+);
+
 const stockSymbols = [
   "AAPL",
   "META",
@@ -29,29 +60,37 @@ export default function StatisticsChart() {
   const [selectedSymbol, setSelectedSymbol] = useState("AAPL");
   const [categories, setCategories] = useState([]);
   const [data, setData] = useState([]);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
   const scrollRef = useRef(null);
 
   const fetchData = async (period, symbol) => {
+    setLoading(true);
+    setError(null);
     try {
       if (period === "predict") {
-        const res = await axios.get("http://localhost:8000/predict", {
+        const res = await api.get("/predict", {
           params: { symbol },
         });
         const predData = res.data;
         if (
           !Array.isArray(predData.dates) ||
           !Array.isArray(predData.predicted)
-        )
-          return;
+        ) {
+          throw new Error("Invalid prediction data format");
+        }
         setCategories(predData.dates);
         setData(predData.predicted);
       } else {
-        const res = await axios.get("http://localhost:8000/historical", {
+        const res = await api.get("/historical", {
           params: { symbol, period },
         });
         const histData = res.data.data;
-        const grouped = {};
+        if (!Array.isArray(histData)) {
+          throw new Error("Invalid historical data format");
+        }
 
+        const grouped = {};
         for (const entry of histData) {
           const rawDate = entry.date || entry.timestamp || entry.Date;
           const close = entry.close || entry.Close;
@@ -71,11 +110,31 @@ export default function StatisticsChart() {
           grouped[label] = close;
         }
 
+        if (Object.keys(grouped).length === 0) {
+          throw new Error("No valid data points found");
+        }
+
         setCategories(Object.keys(grouped));
         setData(Object.values(grouped));
       }
     } catch (err) {
       console.error("❌ Data fetch error:", err);
+      let errorMessage = "Failed to fetch data";
+
+      if (err.code === "ERR_NETWORK") {
+        errorMessage =
+          "Cannot connect to the server. Please check if the backend is running.";
+      } else if (err.response) {
+        errorMessage = err.response.data?.detail || err.message;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+
+      setError(errorMessage);
+      setCategories([]);
+      setData([]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -136,6 +195,8 @@ export default function StatisticsChart() {
         View historical data or forecasted 15-day predictions
       </p>
 
+      {error && <div className="error-message">{error}</div>}
+
       <div className="custom-scrollbar" ref={scrollRef}>
         <button onClick={scrollLeft} className="symbol-button">
           ←
@@ -169,9 +230,15 @@ export default function StatisticsChart() {
       </div>
 
       <div className="chart-container">
-        <div className="chart-inner">
-          <Chart options={options} series={series} type="area" height={310} />
-        </div>
+        {loading ? (
+          <div className="loading-text">Loading data...</div>
+        ) : error ? (
+          <div className="error-message">Failed to load chart data</div>
+        ) : (
+          <div className="chart-inner">
+            <Chart options={options} series={series} type="area" height={310} />
+          </div>
+        )}
       </div>
     </div>
   );

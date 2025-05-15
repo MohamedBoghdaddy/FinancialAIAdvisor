@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuthContext } from "../../../context/AuthContext";
 import axios from "axios";
-import '../styles/lifemanagement.css';
+import '../styles/lifeManagement.css';
 import { useNavigate } from "react-router-dom";
 
 const LifeManagement = () => {

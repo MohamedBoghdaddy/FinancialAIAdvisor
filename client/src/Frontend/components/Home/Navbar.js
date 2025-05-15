@@ -1,122 +1,204 @@
-import React, { useState } from "react";
-import { Navbar, Nav, Container, Modal } from "react-bootstrap";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faUser, faSignOutAlt } from "@fortawesome/free-solid-svg-icons";
-import { NavLink, useNavigate } from "react-router-dom";
-import { Link as ScrollLink } from "react-scroll";
-import Login from "../LOGIN&REGISTRATION/Login/Login";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuthContext } from "../../../context/AuthContext";
 import { useLogout } from "../../../hooks/useLogout.js";
 import "../styles/navbar.css";
-import "bootstrap/dist/css/bootstrap.min.css";
+import Logo from "../../../assets/latest_logo.png";
 
 const NavBar = () => {
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const [expanded, setExpanded] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { state } = useAuthContext();
   const { user, isAuthenticated } = state;
   const { logout } = useLogout();
 
-  const handleLoginModalOpen = () => {
-    setShowLoginModal(true);
-  };
+  // Handle navbar background on scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 50) {
+        setScrolled(true);
+      } else {
+        setScrolled(false);
+      }
+    };
 
-  const handleLoginModalClose = () => {
-    setShowLoginModal(false);
-  };
+    window.addEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
 
-  const handleNavCollapse = () => setExpanded(false);
+  // Close mobile menu when navigating
+  useEffect(() => {
+    setIsOpen(false);
+  }, [location.pathname]);
+
+  // Close mobile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      const navMenu = document.querySelector(".nav-menu");
+      const menuIcon = document.querySelector(".menu-icon");
+
+      if (
+        isOpen &&
+        navMenu &&
+        !navMenu.contains(event.target) &&
+        menuIcon &&
+        !menuIcon.contains(event.target)
+      ) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen]);
+
+  // Prevent scrolling when mobile menu is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isOpen]);
 
   const handleLogout = async () => {
-    logout();
-    navigate("/");
+    try {
+      await logout();
+      setIsOpen(false); // Close mobile menu if open
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
   };
 
+  const toggleMenu = () => {
+    setIsOpen(!isOpen);
+  };
+
+  // Auth Buttons Component
+  const AuthButtons = () => (
+    <div className="auth-container">
+      {isAuthenticated && user ? (
+        <>
+          <span className="user-name">{user.username || user.email}</span>
+          <button className="logout-btn" onClick={handleLogout}>
+            Logout
+          </button>
+        </>
+      ) : (
+        <>
+          <Link to="/login" className="login-btn">
+            Login
+          </Link>
+          <Link to="/signup" className="signup-btn">
+            Sign Up
+          </Link>
+        </>
+      )}
+    </div>
+  );
+
   return (
-    <Navbar expand="lg" className="navbar" variant="dark" expanded={expanded}>
-      <Container fluid>
-        <Navbar.Brand as={NavLink} to="/" className="navbar-brand">
-          <img
-             src="logo192.png"
-            alt="Company Logo"
-            style={{ width: "40px", height: "35px", top: 0 }}
-          />
-        </Navbar.Brand>
-        <Navbar.Toggle
-          aria-controls="basic-navbar-nav"
-          className="navbar-toggler"
-          onClick={() => setExpanded(!expanded)}
-        />
-        <Navbar.Collapse id="navbarScroll" className="navbar-collapse">
-          <Nav className="navbar-nav ms-auto" navbarScroll>
-            <Nav.Link
-              as={NavLink}
-              to="/Home"
-              className="nav-link"
-              onClick={handleNavCollapse}
-            >
-              HOME
-            </Nav.Link>
+    <nav className={`navbar ${scrolled ? "navbar-scrolled" : ""}`}>
+      <div className="navbar-container">
+        <Link to="/" className="navbar-logo">
+          <img src={Logo} alt="Financial AI Advisor" />
+        </Link>
 
-            <Nav.Link
-              as={ScrollLink}
-              to="WhoWeAre"
-              smooth
-              className="nav-link"
-              onClick={handleNavCollapse}
-            >
-              WHO WE ARE
-            </Nav.Link>
+        <div
+          className="menu-icon"
+          onClick={toggleMenu}
+          aria-label="Toggle menu"
+        >
+          <div className={`hamburger ${isOpen ? "active" : ""}`}>
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </div>
 
-            <Nav.Link
-              as={NavLink}
+        <ul className={`nav-menu ${isOpen ? "active" : ""}`}>
+          <li className="nav-item">
+            <Link
+              to="/"
+              className={
+                location.pathname === "/" ? "nav-link active" : "nav-link"
+              }
+            >
+              Home
+            </Link>
+          </li>
+          <li className="nav-item">
+            <Link
+              to="/about"
+              className={
+                location.pathname === "/about" ? "nav-link active" : "nav-link"
+              }
+            >
+              About
+            </Link>
+          </li>
+          <li className="nav-item">
+            <Link
+              to="/lifemanagement"
+              className={
+                location.pathname === "/life-management"
+                  ? "nav-link active"
+                  : "nav-link"
+              }
+            >
+              Life Management
+            </Link>
+          </li>
+          <li className="nav-item">
+            <Link
               to="/contact"
-              className="nav-link"
-              onClick={handleNavCollapse}
+              className={
+                location.pathname === "/contact"
+                  ? "nav-link active"
+                  : "nav-link"
+              }
             >
-              Contact Us
-            </Nav.Link>
+              Contact
+            </Link>
+          </li>
 
-            {isAuthenticated && user && (
-              <Nav.Link
-                as={NavLink}
-                to="/Dashboard"
-                className="nav-link"
-                onClick={handleNavCollapse}
+          {isAuthenticated && user && (
+            <li className="nav-item">
+              <Link
+                to="/dashboard"
+                className={
+                  location.pathname === "/dashboard"
+                    ? "nav-link active"
+                    : "nav-link"
+                }
               >
                 Dashboard
-              </Nav.Link>
-            )}
+              </Link>
+            </li>
+          )}
 
-            {isAuthenticated && user ? (
-              <Nav.Link
-                className="nav-link"
-                role="button"
-                onClick={handleLogout}
-              >
-                <FontAwesomeIcon icon={faSignOutAlt} /> Logout
-              </Nav.Link>
-            ) : (
-              <Nav.Link
-                className="nav-link"
-                role="button"
-                onClick={handleLoginModalOpen}
-              >
-                <FontAwesomeIcon icon={faUser} />
-              </Nav.Link>
-            )}
-          </Nav>
-        </Navbar.Collapse>
-      </Container>
+          {/* Mobile Auth Buttons */}
+          <div className="mobile-auth">
+            <AuthButtons />
+          </div>
+        </ul>
 
-      <Modal show={showLoginModal} onHide={handleLoginModalClose} centered>
-        <Modal.Header closeButton></Modal.Header>
-        <Modal.Body>
-          <Login onLoginSuccess={handleLoginModalClose} />
-        </Modal.Body>
-      </Modal>
-    </Navbar>
+        {/* Desktop Auth Buttons */}
+        <div className="desktop-auth">
+          <AuthButtons />
+        </div>
+      </div>
+    </nav>
   );
 };
 
