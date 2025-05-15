@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, FastAPI, HTTPException, Query
 from pydantic import BaseModel
 import json
 import numpy as np
@@ -6,6 +6,7 @@ import pandas as pd
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.preprocessing import MinMaxScaler
 from tensorflow.keras.models import load_model
+from datetime import datetime, timedelta
 
 router = APIRouter()
 
@@ -30,13 +31,49 @@ class PredictResponse(BaseModel):
     days: int
     predictions: list[float]
 
-# === Load JSON Helper ===
-def load_json_file(filename):
+# === Helper ===
+def load_json_file(filename: str):
     try:
         with open(filename, "r") as f:
             return json.load(f)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error reading {filename}: {str(e)}")
+
+# === /gold/history ===
+@router.get("/history")
+def get_gold_history(period: str = Query("1y", enum=["5y", "3y", "1y", "6mo", "3mo", "1mo", "15d", "7d", "1d"])):
+    try:
+        df = pd.read_csv("data.csv")
+        df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
+        df["24K - Global Price"] = pd.to_numeric(df["24K - Global Price"], errors="coerce")
+        df = df.dropna(subset=["Date", "24K - Global Price"]).sort_values("Date")
+
+        today = df["Date"].max()
+        period_map = {
+            "5y": today - timedelta(days=5 * 365),
+            "3y": today - timedelta(days=3 * 365),
+            "1y": today - timedelta(days=365),
+            "6mo": today - timedelta(days=180),
+            "3mo": today - timedelta(days=90),
+            "1mo": today - timedelta(days=30),
+            "15d": today - timedelta(days=15),
+            "7d": today - timedelta(days=7),
+            "1d": today - timedelta(days=2),
+        }
+
+        cutoff = period_map.get(period)
+        df = df[df["Date"] >= cutoff]
+
+        history = df[["Date", "24K - Global Price"]].copy()
+        history["Date"] = history["Date"].dt.strftime("%Y-%m-%d")
+
+        return {
+            "period": period,
+            "dates": history["Date"].tolist(),
+            "prices": history["24K - Global Price"].tolist()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"History fetch error: {str(e)}")
 
 # === /gold/forecast ===
 @router.get("/forecast", response_model=list[ForecastResponse])
@@ -67,10 +104,13 @@ def get_model_metrics():
             data = load_json_file(filename)
             y_true = np.array(data["actual"])
             y_pred = np.array(data["predictions"])
-            mae = float(mean_absolute_error(y_true, y_pred))
-            rmse = float(np.sqrt(mean_squared_error(y_true, y_pred)))
-            r2 = float(r2_score(y_true, y_pred))
-            results.append(MetricResponse(model=model_name, MAE=mae, RMSE=rmse, R2=r2))
+
+            results.append(MetricResponse(
+                model=model_name,
+                MAE=float(mean_absolute_error(y_true, y_pred)),
+                RMSE=float(np.sqrt(mean_squared_error(y_true, y_pred))),
+                R2=float(r2_score(y_true, y_pred))
+            ))
         return results
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Metric computation error: {str(e)}")
@@ -98,6 +138,7 @@ def predict_next_days(days: int = Query(15, ge=1, le=60)):
 
         model = load_model("GOLD_lstm_model.keras")
         pred_scaled = []
+
         for _ in range(days):
             pred = model.predict(window, verbose=0)[0][0]
             pred_scaled.append(pred)
@@ -107,3 +148,7 @@ def predict_next_days(days: int = Query(15, ge=1, le=60)):
         return PredictResponse(model="LSTM", days=days, predictions=predictions)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
+
+# === Enable Standalone Run ===
+app = FastAPI(title="🌍 Gold Price Forecast API")
+app.include_router(router, prefix="/gold", tags=["Gold"])

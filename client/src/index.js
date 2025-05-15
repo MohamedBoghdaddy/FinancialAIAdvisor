@@ -5,7 +5,8 @@ import reportWebVitals from "./reportWebVitals";
 import { AuthProvider } from "./context/AuthContext";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { ChatProvider } from "./context/ChatContext";
-import DashboardProvider from "./context/DashboardContext";
+import { DashboardProvider } from "./context/DashboardContext"; // ✅ update path
+
 
 // Create a root container
 const container = document.getElementById("root");

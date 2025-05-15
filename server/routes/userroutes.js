@@ -14,7 +14,7 @@ import {
   updateUserRoleOrPassword,
 } from "../controller/usercontroller.js";
 
-import { auth, authorizeRoles } from "../Middleware/authMiddleware.js";
+import { auth, authorizeRoles } from "../middleware/authMiddleware.js";
 import User from "../models/UserModel.js";
 import { updateUserRole } from "../controller/usercontroller.js";
 

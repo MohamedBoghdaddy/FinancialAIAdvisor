@@ -6,198 +6,338 @@ import {
   useMemo,
 } from "react";
 import PropTypes from "prop-types";
-import { useAuthContext } from "./AuthContext";
 import { toast } from "react-toastify";
 import axios from "axios";
 
-// 🔹 API Base URL
 const API_URL = process.env.REACT_APP_API_URL || "http://localhost:4000";
 
-// 🔹 Create Context
 export const DashboardContext = createContext();
 
-// 🔹 Initial State
 const initialState = {
+  profile: null,
+  survey: null,
   analytics: {
     riskTolerance: [],
     lifestyle: [],
   },
-  profile: null,
-  survey: null,
+  marketData: {
+    stockHistory: null,
+    goldHistory: null,
+    realEstateHistory: null,
+    stockPredictions: null,
+    goldPredictions: null,
+    realEstatePredictions: null,
+  },
   loading: true,
   error: null,
+  aiAdvice: null,
+  goalPlan: null,
+  lastUpdated: null,
 };
 
-// 🔹 Reducer Function
 const dashboardReducer = (state, action) => {
   switch (action.type) {
-    case "FETCH_SUCCESS":
-      return { ...state, ...action.payload, loading: false, error: null };
-    case "FETCH_ERROR":
-      return { ...state, loading: false, error: action.payload };
+    case "FETCH_START":
+      return { ...state, loading: true, error: null };
+    case "FETCH_PROFILE_SUCCESS":
+      return {
+        ...state,
+        profile: action.payload,
+        lastUpdated: new Date().toISOString(),
+        loading: false,
+      };
+    case "FETCH_MARKET_DATA_SUCCESS":
+      return {
+        ...state,
+        marketData: {
+          ...state.marketData,
+          ...action.payload,
+        },
+        loading: false,
+      };
+    case "FETCH_AI_ADVICE_SUCCESS":
+      return {
+        ...state,
+        aiAdvice: action.payload,
+        loading: false,
+      };
+    case "FETCH_GOAL_PLAN_SUCCESS":
+      return {
+        ...state,
+        goalPlan: action.payload,
+        loading: false,
+      };
     case "UPDATE_PROFILE":
-      return { ...state, profile: action.payload };
+      return {
+        ...state,
+        profile: action.payload,
+        lastUpdated: new Date().toISOString(),
+      };
+    case "FETCH_ERROR":
+      return {
+        ...state,
+        loading: false,
+        error: action.payload,
+      };
+    case "RESET_STATE":
+      return initialState;
     default:
       return state;
   }
 };
 
-// 🔹 Dashboard Provider
 export const DashboardProvider = ({ children }) => {
-  const { state: authState } = useAuthContext();
-  const { user, isAuthenticated } = authState;
   const [state, dispatch] = useReducer(dashboardReducer, initialState);
 
-  // ✅ Fetch User Profile
-  const fetchProfile = useCallback(async () => {
-    if (!isAuthenticated || !user?._id) return;
-
-    try {
-      const response = await axios.get(`${API_URL}/api/users/${user._id}`, {
-        withCredentials: true,
-      });
-
-      dispatch({
-        type: "FETCH_SUCCESS",
-        payload: { profile: response.data },
-      });
-    } catch (error) {
-      dispatch({
-        type: "FETCH_ERROR",
-        payload: error.response?.data?.message || "Failed to fetch profile",
-      });
-      toast.error("⚠️ Failed to fetch profile.");
-    }
-  }, [isAuthenticated, user]);
-
-  // ✅ Fetch Analytics Data
-  const fetchAnalyticsData = useCallback(async () => {
-    try {
-      const [riskRes, lifestyleRes] = await Promise.all([
-        axios.get(`${API_URL}/api/analytics/risk-tolerance`),
-        axios.get(`${API_URL}/api/analytics/lifestyle`),
-      ]);
-
-      dispatch({
-        type: "FETCH_SUCCESS",
-        payload: {
-          analytics: {
-            riskTolerance: riskRes.data || [],
-            lifestyle: lifestyleRes.data || [],
-          },
-        },
-      });
-    } catch (error) {
-      dispatch({
-        type: "FETCH_ERROR",
-        payload: error.response?.data?.message || "Failed to fetch analytics",
-      });
-      toast.error("⚠️ Failed to fetch analytics data.");
-    }
+  const getAuthToken = useCallback(() => {
+    return localStorage.getItem("token");
   }, []);
 
-  // ✅ Fetch Survey Data
-  const fetchSurveyData = useCallback(async () => {
-    if (!isAuthenticated || !user?._id) return;
+  const handleError = useCallback((error, defaultMessage) => {
+    const message = error.response?.data?.message || defaultMessage;
+    toast.error(`❌ ${message}`);
+    console.error("Error:", error);
+    return message;
+  }, []);
 
-    try {
-      const response = await axios.get(`${API_URL}/api/survey/${user._id}`, {
-        withCredentials: true,
-      });
-
-      dispatch({
-        type: "FETCH_SUCCESS",
-        payload: { survey: response.data },
-      });
-    } catch (error) {
+  const fetchProfile = useCallback(async () => {
+    const token = getAuthToken();
+    if (!token) {
       dispatch({
         type: "FETCH_ERROR",
-        payload: error.response?.data?.message || "Failed to fetch survey data",
+        payload: "No authentication token found",
       });
-      toast.error("⚠️ Failed to fetch survey data.");
+      return;
     }
-  }, [isAuthenticated, user]);
 
-  // ✅ Fetch All Dashboard Data (Profile, Survey, Analytics)
-  const fetchDashboardData = useCallback(async () => {
-    if (!isAuthenticated || !user?._id) return;
-
+    dispatch({ type: "FETCH_START" });
     try {
-      const [profileRes, surveyRes, riskRes, lifestyleRes] = await Promise.all([
-        axios.get(`${API_URL}/api/users/${user._id}`, {
-          withCredentials: true,
-        }),
-        axios.get(`${API_URL}/api/survey/${user._id}`, {
-          withCredentials: true,
-        }),
-        axios.get(`${API_URL}/api/analytics/risk-tolerance`),
-        axios.get(`${API_URL}/api/analytics/lifestyle`),
-      ]);
-
-      dispatch({
-        type: "FETCH_SUCCESS",
-        payload: {
-          profile: profileRes.data,
-          survey: surveyRes.data,
-          analytics: {
-            riskTolerance: riskRes.data || [],
-            lifestyle: lifestyleRes.data || [],
-          },
-        },
+      const res = await axios.get(`${API_URL}/api/profile/me`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
-    } catch (error) {
-      dispatch({
-        type: "FETCH_ERROR",
-        payload:
-          error.response?.data?.message || "Failed to load dashboard data",
-      });
-      toast.error("⚠️ Failed to fetch dashboard data.");
+      dispatch({ type: "FETCH_PROFILE_SUCCESS", payload: res.data.data });
+    } catch (err) {
+      const errorMessage = handleError(err, "Failed to fetch profile");
+      dispatch({ type: "FETCH_ERROR", payload: errorMessage });
     }
-  }, [isAuthenticated, user]);
+  }, [getAuthToken, handleError]);
 
-  // ✅ Update Profile
-  const handleUpdateProfile = useCallback(
+  const submitProfile = useCallback(
     async (profileData) => {
+      const token = getAuthToken();
+      if (!token) {
+        toast.error("❌ User not authenticated. Please log in again.");
+        return;
+      }
+
+      dispatch({ type: "FETCH_START" });
       try {
-        const response = await axios.put(
-          `${API_URL}/api/users/${user._id}`,
-          profileData,
+        const res = await axios.post(`${API_URL}/api/profile`, profileData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (res.data.success) {
+          dispatch({ type: "UPDATE_PROFILE", payload: res.data.data });
+          toast.success("✅ Profile saved successfully!");
+          return res.data;
+        } else {
+          throw new Error(res.data.message || "Profile update failed");
+        }
+      } catch (err) {
+        let errorMessage = "Profile submission failed";
+
+        if (err.response) {
+          // Handle different HTTP error statuses
+          if (err.response.status === 401) {
+            errorMessage = "Session expired. Please log in again.";
+            // Optionally clear invalid token
+            localStorage.removeItem("token");
+          } else if (err.response.data?.message) {
+            errorMessage = err.response.data.message;
+          }
+        }
+
+        dispatch({ type: "FETCH_ERROR", payload: errorMessage });
+        toast.error(`❌ ${errorMessage}`);
+        throw err;
+      }
+    },
+    [getAuthToken]
+  );
+
+  const fetchMarketData = useCallback(
+    async (type, options = {}) => {
+      const token = getAuthToken();
+      if (!token) return;
+
+      dispatch({ type: "FETCH_START" });
+      try {
+        let endpoint;
+        const { symbol = "AAPL", period = "1y" } = options;
+
+        switch (type) {
+          case "stock":
+            endpoint = `/market/stock/historical?symbol=${symbol}&period=${period}`;
+            break;
+          case "gold":
+            endpoint = `/market/gold/history?period=${period}`;
+            break;
+          case "realEstate":
+            endpoint = `/market/real-estate/history?period=${period}`;
+            break;
+          default:
+            throw new Error("Invalid market type");
+        }
+
+        const res = await axios.get(`${API_URL}${endpoint}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        dispatch({
+          type: "FETCH_MARKET_DATA_SUCCESS",
+          payload: { [`${type}History`]: res.data.data },
+        });
+      } catch (err) {
+        const errorMessage = handleError(err, `Failed to fetch ${type} data`);
+        dispatch({ type: "FETCH_ERROR", payload: errorMessage });
+      }
+    },
+    [getAuthToken, handleError]
+  );
+
+  const fetchPredictions = useCallback(
+    async (type, options = {}) => {
+      const token = getAuthToken();
+      if (!token) return;
+
+      dispatch({ type: "FETCH_START" });
+      try {
+        let endpoint;
+        const { symbol = "AAPL", days = 15 } = options;
+
+        switch (type) {
+          case "stock":
+            endpoint = `/market/stock/predict?symbol=${symbol}`;
+            break;
+          case "gold":
+            endpoint = `/market/gold/predict?days=${days}`;
+            break;
+          case "realEstate":
+            endpoint = `/market/real-estate/predict?days=${days}`;
+            break;
+          default:
+            throw new Error("Invalid prediction type");
+        }
+
+        const res = await axios.get(`${API_URL}${endpoint}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        dispatch({
+          type: "FETCH_MARKET_DATA_SUCCESS",
+          payload: { [`${type}Predictions`]: res.data.data },
+        });
+      } catch (err) {
+        const errorMessage = handleError(
+          err,
+          `Failed to fetch ${type} predictions`
+        );
+        dispatch({ type: "FETCH_ERROR", payload: errorMessage });
+      }
+    },
+    [getAuthToken, handleError]
+  );
+
+  const fetchAIAdvice = useCallback(
+    async (profileData) => {
+      const token = getAuthToken();
+      if (!token) return;
+
+      dispatch({ type: "FETCH_START" });
+      try {
+        const res = await axios.post(`${API_URL}/api/ai/advice`, profileData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        dispatch({ type: "FETCH_AI_ADVICE_SUCCESS", payload: res.data.data });
+        return res.data;
+      } catch (err) {
+        const errorMessage = handleError(err, "Failed to get AI advice");
+        dispatch({ type: "FETCH_ERROR", payload: errorMessage });
+        throw err;
+      }
+    },
+    [getAuthToken, handleError]
+  );
+
+  const fetchGoalPlan = useCallback(
+    async (profileData, advice) => {
+      const token = getAuthToken();
+      if (!token) return;
+
+      dispatch({ type: "FETCH_START" });
+      try {
+        const res = await axios.post(
+          `${API_URL}/api/ai/goals`,
           {
-            withCredentials: true,
+            profile: profileData,
+            advice,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
           }
         );
 
-        dispatch({ type: "UPDATE_PROFILE", payload: response.data });
-        toast.success("✅ Profile updated successfully.");
-      } catch (error) {
-        toast.error("⚠️ Failed to update profile.");
+        dispatch({ type: "FETCH_GOAL_PLAN_SUCCESS", payload: res.data.data });
+        return res.data;
+      } catch (err) {
+        const errorMessage = handleError(err, "Failed to generate goal plan");
+        dispatch({ type: "FETCH_ERROR", payload: errorMessage });
+        throw err;
       }
     },
-    [user]
+    [getAuthToken, handleError]
   );
 
-  // ✅ Auto-fetch Data on Component Mount
-  useEffect(() => {
-    fetchDashboardData();
-  }, [fetchDashboardData]);
+  const resetDashboard = useCallback(() => {
+    dispatch({ type: "RESET_STATE" });
+  }, []);
 
-  // ✅ Memoized Context Value
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
+
   const contextValue = useMemo(
     () => ({
-      state,
-      fetchDashboardData,
-      fetchAnalyticsData,
-      fetchProfile,
-      fetchSurveyData,
-      handleUpdateProfile,
+      ...state,
+      actions: {
+        fetchProfile,
+        submitProfile,
+        fetchMarketData,
+        fetchPredictions,
+        fetchAIAdvice,
+        fetchGoalPlan,
+        resetDashboard,
+      },
     }),
     [
       state,
-      fetchDashboardData,
-      fetchAnalyticsData,
       fetchProfile,
-      fetchSurveyData,
-      handleUpdateProfile,
+      submitProfile,
+      fetchMarketData,
+      fetchPredictions,
+      fetchAIAdvice,
+      fetchGoalPlan,
+      resetDashboard,
     ]
   );
 
@@ -208,7 +348,6 @@ export const DashboardProvider = ({ children }) => {
   );
 };
 
-// 🔹 Prop Types Validation
 DashboardProvider.propTypes = {
   children: PropTypes.node.isRequired,
 };

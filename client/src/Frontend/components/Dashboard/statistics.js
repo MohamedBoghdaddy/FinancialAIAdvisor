@@ -6,25 +6,25 @@ import "../styles/statistics.css";
 // Create axios instance with base configuration
 const api = axios.create({
   baseURL: "http://localhost:8000",
-  timeout: 10000,
+  timeout: 30000, // Increased timeout to 30 seconds
   headers: { "Content-Type": "application/json" },
 });
 
-// Add request interceptor to handle auth token
+// Request interceptor
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
-// Add response interceptor to handle errors
+// Response interceptor with enhanced error handling
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.code === "ERR_NETWORK") {
-      console.error(
-        "Network Error: Please check if the backend server is running"
-      );
+    if (error.code === "ECONNABORTED") {
+      console.error("Request timeout: The server took too long to respond");
+    } else if (error.code === "ERR_NETWORK") {
+      console.error("Network Error: Please check your internet connection");
     }
     return Promise.reject(error);
   }
@@ -57,101 +57,103 @@ export default function StatisticsChartWithSwitcher() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const scrollRef = useRef(null);
+  const abortControllerRef = useRef(new AbortController());
 
   const fetchData = async () => {
+    // Cancel any pending requests
+    abortControllerRef.current.abort();
+    abortControllerRef.current = new AbortController();
+
     setLoading(true);
     setError(null);
+
     try {
       let response;
+      const signal = abortControllerRef.current.signal;
+
       if (type === "stock") {
         if (range === "predict") {
           response = await api.get("/predict", {
             params: { symbol: selectedSymbol },
+            signal,
           });
-          const predData = response.data;
-          if (
-            !Array.isArray(predData.dates) ||
-            !Array.isArray(predData.predicted)
-          ) {
-            throw new Error("Invalid prediction data format");
-          }
-          setCategories(predData.dates);
-          setData(predData.predicted);
+          const { dates, predicted } = response.data;
+          setCategories(dates);
+          setData(predicted);
         } else {
           response = await api.get("/historical", {
             params: { symbol: selectedSymbol, period: range },
+            signal,
           });
-          const histData = response.data.data;
-          if (!Array.isArray(histData)) {
-            throw new Error("Invalid historical data format");
-          }
-
           const grouped = {};
-          for (const entry of histData) {
-            const rawDate = entry.date || entry.timestamp || entry.Date;
-            const close = entry.close || entry.Close;
-            if (!rawDate || close === undefined) continue;
-
-            const date = new Date(rawDate);
-            if (isNaN(date.getTime())) continue;
-
-            const label =
-              range === "1d"
-                ? date.toLocaleTimeString("en-US", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })
-                : date.toLocaleDateString("en-US");
-
-            grouped[label] = close;
-          }
-
-          if (Object.keys(grouped).length === 0) {
-            throw new Error("No valid data points found");
-          }
-
+          response.data.data.forEach(
+            ({ date, timestamp, Date: dt, close, Close }) => {
+              const rawDate = date || timestamp || dt;
+              const val = close || Close;
+              if (!rawDate || val === undefined) return;
+              const d = new Date(rawDate);
+              const label =
+                range === "1d"
+                  ? d.toLocaleTimeString("en-US", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })
+                  : d.toLocaleDateString("en-US");
+              grouped[label] = val;
+            }
+          );
           setCategories(Object.keys(grouped));
           setData(Object.values(grouped));
         }
       } else if (type === "gold") {
         if (range === "predict") {
-          response = await api.get("/gold/predict", { params: { days: 15 } });
+          response = await api.get("/gold/predict", {
+            params: { days: 15 },
+            signal,
+          });
           setCategories([...Array(15).keys()].map((d) => `Day ${d + 1}`));
           setData(response.data.predictions);
         } else {
-          const goldHist = await api.get("/gold/forecast");
-          const arima = goldHist.data.find((m) => m.model === "ARIMA");
-          setCategories(
-            arima.actual.map((_, i) => `T-${arima.actual.length - i}`)
-          );
-          setData(arima.actual);
+          response = await api.get("/gold/history", {
+            params: { period: range },
+            signal,
+          });
+          setCategories(response.data.dates);
+          setData(response.data.prices);
         }
       } else if (type === "realestate") {
         if (range === "predict") {
           response = await api.get("/realestate/predict", {
             params: { days: 15 },
+            signal,
           });
           setCategories([...Array(15).keys()].map((d) => `Day ${d + 1}`));
           setData(response.data.predictions);
         } else {
-          const realHist = await api.get("/realestate/forecast");
-          const best = realHist.data.find((m) => m.model === "LSTM");
-          setCategories(
-            best.forecast.map((_, i) => `T-${best.forecast.length - i}`)
-          );
-          setData(best.forecast);
+          response = await api.get("/realestate/history", {
+            params: { period: range },
+            signal,
+          });
+          setCategories(response.data.dates);
+          setData(response.data.prices);
         }
       }
     } catch (err) {
+      if (axios.isCancel(err)) {
+        console.log("Request canceled:", err.message);
+        return;
+      }
+
       console.error("❌ Data fetch error:", err);
       let errorMessage = "Failed to fetch data";
 
-      if (err.code === "ERR_NETWORK") {
-        errorMessage =
-          "Cannot connect to the server. Please check if the backend is running.";
+      if (err.code === "ECONNABORTED") {
+        errorMessage = "Request timed out. Please try again.";
+      } else if (err.code === "ERR_NETWORK") {
+        errorMessage = "Network error. Please check your connection.";
       } else if (err.response) {
         errorMessage = err.response.data?.detail || err.message;
-      } else if (err.message) {
+      } else {
         errorMessage = err.message;
       }
 
@@ -165,6 +167,10 @@ export default function StatisticsChartWithSwitcher() {
 
   useEffect(() => {
     fetchData();
+    return () => {
+      // Cleanup: cancel any pending requests when component unmounts
+      abortControllerRef.current.abort();
+    };
   }, [type, range, selectedSymbol]);
 
   const scrollLeft = () =>
@@ -181,10 +187,7 @@ export default function StatisticsChartWithSwitcher() {
       toolbar: { show: false },
     },
     stroke: { curve: "smooth", width: 2 },
-    fill: {
-      type: "gradient",
-      gradient: { opacityFrom: 0.55, opacityTo: 0 },
-    },
+    fill: { type: "gradient", gradient: { opacityFrom: 0.55, opacityTo: 0 } },
     markers: { size: 0, hover: { size: 5 } },
     grid: {
       yaxis: { lines: { show: true } },
@@ -197,11 +200,8 @@ export default function StatisticsChartWithSwitcher() {
     },
     xaxis: {
       type: "category",
-      categories: categories,
-      labels: {
-        style: { fontSize: "11px", colors: ["#6B7280"] },
-        rotate: -45,
-      },
+      categories,
+      labels: { style: { fontSize: "11px", colors: ["#6B7280"] }, rotate: -45 },
       axisBorder: { show: false },
       axisTicks: { show: false },
     },
@@ -220,15 +220,14 @@ export default function StatisticsChartWithSwitcher() {
         View historical data or forecasted predictions
       </p>
 
-      {/* Source Type Switcher */}
       <div className="source-switcher">
-        {assetTypes.map((src) => (
+        {assetTypes.map(({ key, label }) => (
           <button
-            key={src.key}
-            className={`range-button ${type === src.key ? "selected" : ""}`}
-            onClick={() => setType(src.key)}
+            key={key}
+            className={`range-button ${type === key ? "selected" : ""}`}
+            onClick={() => setType(key)}
           >
-            {src.label}
+            {label}
           </button>
         ))}
       </div>
@@ -271,12 +270,15 @@ export default function StatisticsChartWithSwitcher() {
 
       {(type === "gold" || type === "realestate") && (
         <div className="range-selector">
-          <button
-            className={`range-button ${range === "1y" ? "selected" : ""}`}
-            onClick={() => setRange("1y")}
-          >
-            HISTORY
-          </button>
+          {timeRanges.map((r) => (
+            <button
+              key={r}
+              className={`range-button ${r === range ? "selected" : ""}`}
+              onClick={() => setRange(r)}
+            >
+              {r.toUpperCase()}
+            </button>
+          ))}
           <button
             className={`range-button ${range === "predict" ? "selected" : ""}`}
             onClick={() => setRange("predict")}
@@ -290,7 +292,12 @@ export default function StatisticsChartWithSwitcher() {
         {loading ? (
           <div className="loading-text">Loading data...</div>
         ) : error ? (
-          <div className="error-message">{error}</div>
+          <div className="error-message">
+            {error}
+            <button onClick={fetchData} className="retry-button">
+              Retry
+            </button>
+          </div>
         ) : (
           <div className="chart-inner">
             <Chart options={options} series={series} type="area" height={310} />

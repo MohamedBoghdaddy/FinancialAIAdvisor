@@ -10,16 +10,16 @@ import connectMongoDBSession from "connect-mongodb-session";
 import path from "path";
 import { fileURLToPath } from "url";
 import axios from "axios";
-// 🧠 Optional: import helmet for security
-// import helmet from "helmet";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 
 // 🌍 Route Imports
-import userRoutes from "./routes/userroutes.js";
+import userRoutes from "./routes/userRoutes.js";
 import chatRoutes from "./routes/chatRoutes.js";
 import questionnaireRoutes from "./routes/questionnaireRoutes.js";
 import analyticsRoutes from "./routes/analyticRoutes.js";
-import lifeManagementRoutes from "./routes/lifemanagement.js";
-import Profile from "./controller/profileController.js";
+import lifeManagement from "./routes/lifeManagement.js";
+import profileRoutes from "./routes/profileRoutes.js"; // Fixed import
 
 // 📁 Path & Env Setup
 const __filename = fileURLToPath(import.meta.url);
@@ -29,11 +29,10 @@ dotenv.config();
 // 🔐 Configuration
 const PORT = process.env.PORT || 4000;
 const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:3000";
-const FLASK_API_BASE_URL = "http://localhost:8000/phi-model";
+const FLASK_API_BASE_URL = process.env.FLASK_API_URL || "http://localhost:8000";
 const JWT_SECRET = process.env.JWT_SECRET || "secure_dev_token";
 const MONGO_URL =
-  process.env.MONGO_URL ||
-  "mongodb+srv://your_user:your_pass@cluster.mongodb.net/db";
+  process.env.MONGO_URL || "mongodb://localhost:27017/financialAI";
 
 // 🚨 Verify Config
 if (!MONGO_URL) {
@@ -50,11 +49,11 @@ const connectDB = async () => {
     });
     console.log("✅ MongoDB connected.");
   } catch (error) {
-    console.error("❌ MongoDB failed:", error);
-    setTimeout(connectDB, 5000); // Retry logic
+    console.error("❌ MongoDB connection failed:", error);
+    process.exit(1);
   }
 };
-connectDB();
+await connectDB();
 
 // 🧠 Session Store
 const MongoDBStore = connectMongoDBSession(session);
@@ -67,13 +66,8 @@ store.on("error", (err) => console.error("❌ Session store error:", err));
 // 🚀 Express App Init
 const app = express();
 
-// 🛡️ Middleware
-// app.use(helmet()); // Optional
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
-
-// 🌐 CORS: Allow both frontend and FastAPI
+// 🛡️ Security Middleware
+app.use(helmet());
 app.use(
   cors({
     origin: [
@@ -88,61 +82,106 @@ app.use(
   })
 );
 
-// 📂 Uploads
-const upload = multer({ dest: "uploads/" });
+// Rate Limiting
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100,
+  message: "Too many requests from this IP, please try again later",
+});
+
+// 📂 Uploads Configuration
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads/");
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  },
+});
+const upload = multer({ storage });
+
+// 🛠️ General Middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+app.use(
+  session({
+    secret: JWT_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    store: store,
+    cookie: {
+      maxAge: 1000 * 60 * 60 * 24, // 1 day
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+    },
+  })
+);
 
 // 🧩 API Routes
 app.use("/api/users", userRoutes);
-app.use("/api/chat", chatRoutes); // Web chat or logs, not AI proxy
+app.use("/api/chat", apiLimiter, chatRoutes);
 app.use("/api/questionnaire", questionnaireRoutes);
 app.use("/api/analytics", analyticsRoutes);
-app.use("/api/lifemanagement", lifeManagementRoutes);
-app.use("/api/profile", Profile);
+app.use("/api/lifemanagement", lifeManagement);
+app.use("/api/profile", profileRoutes); // Using the router
 
-// ✅ Unified FastAPI proxy with Authorization support
-const forwardPost = async (req, res, endpoint) => {
+// 🔄 FastAPI Proxy Configuration
+const forwardRequest = async (req, res, endpoint) => {
   try {
     const token = req.headers.authorization || req.cookies.token;
-    const response = await axios.post(
-      `${FLASK_API_BASE_URL}${endpoint}`,
-      req.body,
-      {
-        headers: {
-          "Content-Type": "application/json",
-          ...(token && { Authorization: token }),
-        },
-        withCredentials: true,
-      }
-    );
+    const response = await axios({
+      method: req.method,
+      url: `${FLASK_API_BASE_URL}${endpoint}`,
+      data: req.body,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token && { Authorization: token }),
+      },
+      withCredentials: true,
+    });
     res.status(response.status).json(response.data);
   } catch (error) {
-    console.error(
-      `❌ Proxy Error [${endpoint}]:`,
-      error?.response?.data || error.message
-    );
+    console.error(`❌ Proxy Error [${endpoint}]:`, error.message);
     res.status(error?.response?.status || 500).json({
-      error: error?.response?.data || "Unexpected error from FastAPI.",
+      error: error?.response?.data?.error || "Internal Server Error",
     });
   }
 };
 
-// ✅ Routes mapped to FastAPI
-app.post("/api/chat", (req, res) => forwardPost(req, res, "/phi-model/chat"));
-app.post("/api/infer", (req, res) => forwardPost(req, res, "/phi-model/infer"));
-app.post("/api/analyze_survey", (req, res) =>
-  forwardPost(req, res, "/api/user")
+// 🔄 Proxy Routes
+app.post("/api/phi/chat", (req, res) => forwardRequest(req, res, "/chat"));
+app.post("/api/phi/infer", (req, res) => forwardRequest(req, res, "/infer"));
+app.post("/api/phi/analyze", (req, res) =>
+  forwardRequest(req, res, "/analyze")
 );
-app.post("/api/generate_plan", (req, res) =>
-  forwardPost(req, res, "/api/generate_plan")
+app.post("/api/phi/generate", (req, res) =>
+  forwardRequest(req, res, "/generate")
 );
 
-// ⚛️ Serve React Frontend
-app.use(express.static(path.join(__dirname, "../client/build")));
-app.get("*", (req, res) =>
-  res.sendFile(path.join(__dirname, "../client/build/index.html"))
-);
+// ⚛️ Serve React Frontend in Production
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(path.join(__dirname, "../client/build")));
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(__dirname, "../client/build/index.html"));
+  });
+}
+
+// 🚨 Error Handling Middleware
+app.use((err, req, res, next) => {
+  console.error("❌ Server Error:", err.stack);
+  res.status(500).json({
+    error: "Internal Server Error",
+    message: process.env.NODE_ENV === "development" ? err.message : undefined,
+  });
+});
 
 // 🚀 Start Server
-app.listen(PORT, () =>
-  console.log(`🚀 Server is running on http://localhost:${PORT}`)
-);
+app.listen(PORT, () => {
+  console.log(`
+  🚀 Server is running!
+  🔗 Local: http://localhost:${PORT}
+  🌐 Client: ${CLIENT_URL}
+  🧠 AI API: ${FLASK_API_BASE_URL}
+  `);
+});
