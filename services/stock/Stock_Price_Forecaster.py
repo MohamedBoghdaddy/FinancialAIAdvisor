@@ -13,12 +13,11 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["*"],  # Temporarily use "*" to test, then restrict
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 symbols = [
     "AAPL", "META", "AMZN", "NFLX", "GOOGL",
     "MSFT", "TSLA", "NVDA", "BRK-B", "JPM",
