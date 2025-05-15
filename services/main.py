@@ -1,54 +1,34 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from transformers import AutoModelForCausalLM, AutoTokenizer
-import torch
-import os
 
-# Load your fine-tuned Phi-2 model
-MODEL_PATH = "Phi-Model/phi2-finetuned"
+# === Routers ===
+from stock.stock_router import router as stock_router
+from gold.gold_router import router as gold_router
+from real_estate.real_estate_router import router as real_estate_router
+from agent.Phi_Model.phi_model_router import router as phi_model_router
 
-try:
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH, trust_remote_code=True)
-    model = AutoModelForCausalLM.from_pretrained(MODEL_PATH, trust_remote_code=True)
-    model.eval()
-    print("✅ Fine-tuned Phi-2 model loaded.")
-except Exception as e:
-    raise RuntimeError(f"❌ Failed to load Phi-2 model from {MODEL_PATH}: {e}")
+# === Shared model loader (used internally by routers, no direct use here) ===
+from agent.Phi_Model.phi2_loader import model, tokenizer
 
-# Initialize FastAPI app
+# === FastAPI App Initialization ===
 app = FastAPI(title="AI Financial Advisor")
 
-# Enable CORS for your frontend (adjust origins as needed)
+# === CORS Setup ===
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Use specific origin in production
+    allow_origins=[
+        "http://localhost:3000",  # React frontend
+        "http://localhost:4000",  # Express backend if calling FastAPI
+        "http://localhost:5173",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Include the custom logic routes from all services
-from stock import router as stock_router
-from gold import router as gold_router
-from real_estate import router as real_estate_router
-from agent import router as agent_router
-from DPhi_Model import router as phi_model_router
-
-# Add routers for each service folder
+# === Register All API Routers ===
 app.include_router(stock_router, prefix="/stock", tags=["Stock"])
 app.include_router(gold_router, prefix="/gold", tags=["Gold"])
 app.include_router(real_estate_router, prefix="/realestate", tags=["Real Estate"])
-app.include_router(agent_router, prefix="/agent", tags=["Agent"])
 app.include_router(phi_model_router, prefix="/phi-model", tags=["Phi-Model"])
 
-# Route for prompting the Phi model directly
-@app.post("/ask")
-async def ask_phi(prompt: str):
-    try:
-        inputs = tokenizer(prompt, return_tensors="pt")
-        with torch.no_grad():
-            outputs = model.generate(**inputs, max_length=200, do_sample=True)
-        response = tokenizer.decode(outputs[0], skip_special_tokens=True)
-        return {"response": response}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Model inference failed: {e}")
