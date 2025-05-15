@@ -2,38 +2,31 @@ import express from "express";
 import {
   submitQuestionnaire,
   getUserQuestionnaire,
+  getQuestionnairesByUser,
 } from "../controller/questionnaireController.js";
 import { auth } from "../Middleware/authMiddleware.js";
-import Questionnaire from "../models/questionnaireModel.js";
-import { getQuestionnairesByUser } from "../controller/questionnaireController.js";
 
 const router = express.Router();
 
-// Route to submit questionnaire responses (Only once per day)
+/**
+ * @route   POST /api/questionnaire/submit
+ * @desc    Submit a new questionnaire (authenticated user)
+ * @access  Private
+ */
 router.post("/submit", auth, submitQuestionnaire);
 
-// Route to get the latest questionnaire response by the logged-in user
-router.get("/latest", auth, async (req, res) => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({ message: "Unauthorized access." });
-    }
+/**
+ * @route   GET /api/questionnaire/latest
+ * @desc    Get the latest questionnaire for the logged-in user
+ * @access  Private
+ */
+router.get("/latest", auth, getUserQuestionnaire);
 
-    const questionnaire = await Questionnaire.findOne({ userId: req.user._id })
-      .sort({ createdAt: -1 }) // Get the latest questionnaire
-      .lean();
-
-    if (!questionnaire) {
-      return res.status(404).json({ message: "No questionnaire found." });
-    }
-
-    res.status(200).json(questionnaire);
-  } catch (error) {
-    console.error("❌ Error fetching questionnaire:", error);
-    res.status(500).json({ message: "Internal server error." });
-  }
-});
-
-router.get("/user/:userId", getQuestionnairesByUser);
+/**
+ * @route   GET /api/questionnaire/user/:userId
+ * @desc    Admin: Get all questionnaires submitted by a specific user
+ * @access  Admin
+ */
+router.get("/user/:userId", auth, getQuestionnairesByUser);
 
 export default router;
