@@ -126,7 +126,7 @@ export const DashboardProvider = ({ children }) => {
     async (profileData) => {
       const token = getAuthToken();
       if (!token) {
-        toast.error("❌ User not authenticated. Please log in again.");
+        toast.error("❌ User not authenticated.");
         return;
       }
 
@@ -139,33 +139,16 @@ export const DashboardProvider = ({ children }) => {
           },
         });
 
-        if (res.data.success) {
-          dispatch({ type: "UPDATE_PROFILE", payload: res.data.data });
-          toast.success("✅ Profile saved successfully!");
-          return res.data;
-        } else {
-          throw new Error(res.data.message || "Profile update failed");
-        }
+        dispatch({ type: "UPDATE_PROFILE", payload: res.data.data });
+        toast.success("✅ Profile saved successfully!");
+        return res.data;
       } catch (err) {
-        let errorMessage = "Profile submission failed";
-
-        if (err.response) {
-          // Handle different HTTP error statuses
-          if (err.response.status === 401) {
-            errorMessage = "Session expired. Please log in again.";
-            // Optionally clear invalid token
-            localStorage.removeItem("token");
-          } else if (err.response.data?.message) {
-            errorMessage = err.response.data.message;
-          }
-        }
-
+        const errorMessage = handleError(err, "Profile submission failed");
         dispatch({ type: "FETCH_ERROR", payload: errorMessage });
-        toast.error(`❌ ${errorMessage}`);
         throw err;
       }
     },
-    [getAuthToken]
+    [getAuthToken, handleError]
   );
 
   const fetchMarketData = useCallback(

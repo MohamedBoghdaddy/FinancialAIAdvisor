@@ -119,7 +119,7 @@ const Profile = () => {
   const { user } = authState || {};
 
   const {
-    state: dashState = {},
+   state: dashState = {},
     actions: { submitProfile } = {},
     loading = false,
     aiAdvice = null,
@@ -184,11 +184,6 @@ const Profile = () => {
   };
 
   const handleSubmit = async () => {
-    if (!user?.token) {
-      toast.error("❌ Please log in to save your profile");
-      return;
-    }
-
     const currentQuestion = questions[step];
     const error = validateField(
       currentQuestion.id,
@@ -204,9 +199,9 @@ const Profile = () => {
     try {
       await submitProfile(formData);
       setEditMode(false);
+      toast.success("Profile saved successfully!");
     } catch (error) {
-      // Error is already handled in DashboardContext
-      console.error("Profile submission error:", error);
+      toast.error("Failed to save profile. Please try again.");
     }
   };
 
