@@ -1,189 +1,109 @@
-/* === General Container === */
-.life-management-page {
-  margin: 3rem auto;
-  padding: 2rem;
-  background-color: #ffffff;
-  border-radius: 1.5rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  color: #333;
-  max-width: 1000px;
-  box-sizing: border-box;
+.life-management-container {
+  max-width: 800px;
+  margin: 2rem auto;
 }
 
-@media (min-width: 640px) {
-  .life-management-page {
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
-    padding-top: 1.5rem;
-  }
-}
-
-@media (min-width: 740px) {
-  .life-management-page {
-    margin-left: 22%;
-  }
-}
-
-@media (prefers-color-scheme: dark) {
-  .life-management-page {
-    background-color: rgba(255, 255, 255, 0.03);
-    border-color: #1f2937;
-  }
-
-  .life-management-page h2,
-  .life-management-page h4 {
-    color: rgba(255, 255, 255, 0.9);
-  }
-
-  .life-management-page label {
-    color: #9ca3af;
-  }
-}
-
-/* === Title === */
-.life-management-page h2 {
-  display: flex;
-  align-items: center;
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin-bottom: 1.5rem;
-  color: #1f2937;
-}
-
-.life-management-page h4 {
-  margin-top: 2rem;
-  margin-bottom: 0.5rem;
-  color: #444;
-}
-
-/* === Label Styling === */
-.life-management-page label {
-  display: block;
-  margin-top: 1rem;
-  font-weight: 500;
-  color: #333;
-}
-
-/* === Input and Textarea Fields === */
-.life-management-page input[type="text"],
-.life-management-page input[type="number"],
-.life-management-page textarea {
-  width: 100%;
-  padding: 0.6rem 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 0.5rem;
-  margin-top: 0.25rem;
-  box-sizing: border-box;
-  font-size: 0.95rem;
-  transition: border 0.2s ease;
-}
-
-.life-management-page input:focus,
-.life-management-page textarea:focus {
-  outline: none;
-  border-color: #3399ff;
-  box-shadow: 0 0 0 2px rgba(51, 153, 255, 0.2);
-}
-
-/* === Textarea Styling === */
-textarea {
-  min-height: 80px;
-  resize: vertical;
-}
-
-/* === Goal Chips === */
-.goal-chip {
-  display: inline-flex;
-  align-items: center;
-  background-color: #f3f4f6;
-  padding: 0.4rem 0.75rem;
-  border-radius: 999px;
-  margin: 0.25rem;
-  font-size: 0.9rem;
-  cursor: pointer;
-  user-select: none;
-}
-
-.goal-chip input {
-  margin-right: 0.5rem;
-}
-
-/* === Custom Expense Section === */
-.custom-expense {
-  display: flex;
-  gap: 1rem;
-  margin-top: 0.75rem;
-}
-
-.custom-expense input {
-  flex: 1;
-}
-
-/* === Button Styles === */
-button[type="button"],
-button[type="submit"] {
-  display: inline-block;
-  margin-top: 1.5rem;
-  background-color: #3399ff;
-  color: white;
+.life-management-card {
   border: none;
-  padding: 0.7rem 1.2rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.life-management-card .card-header {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+  padding: 1.5rem;
+}
+
+.life-management-card .card-header h3 {
+  margin: 0;
+  color: #212529;
+  font-size: 1.5rem;
+}
+
+.form-label {
+  color: #495057;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.form-control,
+.form-select {
+  padding: 0.75rem 1rem;
   border-radius: 0.5rem;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
+  border: 1px solid #ced4da;
 }
 
-button[type="button"]:hover,
-button[type="submit"]:hover {
-  background-color: #0077cc;
+.form-control:focus,
+.form-select:focus {
+  box-shadow: none;
+  border-color: #80bdff;
 }
 
-button[disabled] {
-  background-color: #ccc;
-  cursor: not-allowed;
+textarea.form-control {
+  resize: vertical;
+  min-height: 100px;
 }
 
-/* === Error Messages === */
-.error {
-  color: red;
+.submit-button {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
   margin-top: 1rem;
-  font-weight: bold;
-  text-align: center;
 }
 
-/* === Scrollable Buttons Row === */
-.custom-scrollbar {
-  overflow-x: auto;
-  scrollbar-width: thin;
-  display: flex;
-  gap: 0.5rem;
-  margin: 1rem 0;
+.goals-section {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid #e9ecef;
 }
 
-.custom-scrollbar::-webkit-scrollbar {
-  height: 6px;
+.goals-section h4 {
+  color: #212529;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
 }
 
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: #d1d5db;
-  border-radius: 10px;
+.goal-item {
+  margin-bottom: 0.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid #e9ecef;
+  padding: 1rem;
+  background-color: #f8f9fa;
 }
 
-/* === Responsive Adjustments === */
-@media (max-width: 600px) {
-  .life-management-page {
-    padding: 1.25rem;
+.goal-item:last-child {
+  margin-bottom: 0;
+}
+
+.alert {
+  border-radius: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.alert-success {
+  background-color: #d4edda;
+  border-color: #c3e6cb;
+  color: #155724;
+}
+
+.alert-danger {
+  background-color: #f8d7da;
+  border-color: #f5c6cb;
+  color: #721c24;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .life-management-container {
+    margin: 1rem;
   }
 
-  .custom-expense {
-    flex-direction: column;
+  .life-management-card .card-header {
+    padding: 1rem;
   }
-}
 
-@media (max-width: 740px) {
-  .life-management-page {
-    margin-left: 30%;
+  .goals-section {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
   }
 }

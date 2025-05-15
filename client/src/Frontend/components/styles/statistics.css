@@ -18,7 +18,7 @@
 }
 @media (min-width: 740px) {
   .statistics-container {
-margin-left: 22%;
+    margin-left: 22%;
   }
 }
 @media (prefers-color-scheme: dark) {
@@ -128,10 +128,31 @@ margin-left: 22%;
   border-radius: 10px;
 }
 
-/* === Loader === */
+/* === Error and Loading States === */
+.error-message {
+  background-color: #fee2e2;
+  color: #dc2626;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+  text-align: center;
+  font-size: 0.875rem;
+}
+
 .loading-text {
   text-align: center;
-  margin-top: 4rem;
-  font-size: 1.25rem;
-  color: #666;
+  padding: 2rem;
+  color: #6b7280;
+  font-size: 1rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  .error-message {
+    background-color: rgba(220, 38, 38, 0.1);
+    color: #f87171;
+  }
+
+  .loading-text {
+    color: #9ca3af;
+  }
 }

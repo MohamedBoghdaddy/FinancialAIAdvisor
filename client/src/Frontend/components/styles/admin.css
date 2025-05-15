@@ -3,6 +3,8 @@
     padding: 40px;
     font-family: "Segoe UI", sans-serif;
     background-color: #f4f6f8;
+    margin-left: 25%;
+
   }
   
   /* ===== Dashboard Cards ===== */
@@ -134,6 +136,13 @@
   
   /* ===== Responsive ===== */
   @media (max-width: 768px) {
+    .admin-dashboard {
+      padding: 40px;
+      font-family: "Segoe UI", sans-serif;
+      background-color: #f4f6f8;
+      margin-left: 15%;
+  
+    }
     .admin-cards {
       flex-direction: column;
     }
@@ -398,3 +407,16 @@
     gap: 10px;
   }
   
+
+
+
+  @media (max-width: 1068px) {
+    .admin-dashboard {
+      padding: 40px;
+      font-family: "Segoe UI", sans-serif;
+      background-color: #f4f6f8;
+      margin-left: 5%;
+  
+    }
+
+  }
