@@ -41,13 +41,20 @@ const Signup = () => {
     <div className="main-Container">
       <div className="frame-Container">
         <div className="left-sign">
-          <h2 className="signup_title">Sign Up for Personalized Financial Advice</h2>
-          <form style={{ width: "90%", margin: "auto", gap: "20px" }} onSubmit={handleSignup}>
+          <h2 className="signup_title">
+            Sign Up for Personalized Financial Advice
+          </h2>
+
+          <form
+            style={{ width: "90%", margin: "auto", gap: "20px" }}
+            onSubmit={handleSignup}
+          >
+            {/* Username */}
             <div className="field">
               <div className="field-wrapper">
                 <label htmlFor="username">Username</label>
                 <input
-                  placeholder="enter your username"
+                  placeholder="Enter your username"
                   type="text"
                   id="username"
                   value={username}
@@ -56,11 +63,13 @@ const Signup = () => {
                 />
               </div>
             </div>
+
+            {/* Email */}
             <div className="field">
               <div className="field-wrapper">
                 <label htmlFor="email">Email</label>
                 <input
-                  placeholder="enter your email"
+                  placeholder="Enter your email"
                   type="email"
                   id="email"
                   value={email}
@@ -69,11 +78,13 @@ const Signup = () => {
                 />
               </div>
             </div>
+
+            {/* National ID */}
             <div className="field">
               <div className="field-wrapper">
                 <label htmlFor="nid">National ID (NID):</label>
                 <input
-                  placeholder="enter your NID"
+                  placeholder="Enter your NID"
                   type="text"
                   id="nid"
                   value={nid}
@@ -82,37 +93,41 @@ const Signup = () => {
                 />
               </div>
             </div>
+
+            {/* Monthly Income */}
             <div className="field">
               <div className="field-wrapper">
                 <label htmlFor="income">Monthly Income:</label>
                 <input
-                  placeholder="Enter your income"
                   type="number"
                   id="income"
+                  placeholder="Enter your income"
                   value={income}
                   onChange={(e) => setIncome(e.target.value)}
-                  placeholder="Enter your income"
                 />
               </div>
             </div>
+
+            {/* Financial Goals */}
             <div className="field">
               <div className="field-wrapper">
                 <label htmlFor="financialGoals">Financial Goals:</label>
                 <input
-                  placeholder="e.g., Save for a house, Retirement"
                   type="text"
                   id="financialGoals"
+                  placeholder="e.g., Save for a house, Retirement"
                   value={financialGoals}
                   onChange={(e) => setFinancialGoals(e.target.value)}
-                  placeholder="e.g., Save for a house, Retirement"
                 />
               </div>
             </div>
+
+            {/* Name Fields */}
             <div className="field">
               <div className="field-wrapper">
                 <label htmlFor="firstName">First Name:</label>
                 <input
-                  placeholder="enter your first name"
+                  placeholder="Enter your first name"
                   type="text"
                   id="firstName"
                   value={firstName}
@@ -120,11 +135,12 @@ const Signup = () => {
                 />
               </div>
             </div>
+
             <div className="field">
               <div className="field-wrapper">
                 <label htmlFor="middleName">Middle Name:</label>
                 <input
-                  placeholder="enter your middle name"
+                  placeholder="Enter your middle name"
                   type="text"
                   id="middleName"
                   value={middleName}
@@ -132,11 +148,12 @@ const Signup = () => {
                 />
               </div>
             </div>
+
             <div className="field">
               <div className="field-wrapper">
                 <label htmlFor="lastName">Last Name:</label>
                 <input
-                  placeholder="enter your last name"
+                  placeholder="Enter your last name"
                   type="text"
                   id="lastName"
                   value={lastName}
@@ -144,11 +161,13 @@ const Signup = () => {
                 />
               </div>
             </div>
+
+            {/* Password */}
             <div className="field password-container">
               <div className="field-wrapper">
                 <label htmlFor="password">Password:</label>
                 <input
-                  placeholder="enter your password"
+                  placeholder="Enter your password"
                   type={showPassword ? "text" : "password"}
                   id="password"
                   value={password}
@@ -165,11 +184,13 @@ const Signup = () => {
                 </button>
               </div>
             </div>
+
+            {/* Confirm Password */}
             <div className="field password-container">
               <div className="field-wrapper">
                 <label htmlFor="confirmPassword">Confirm Password:</label>
                 <input
-                  placeholder="confirm your password"
+                  placeholder="Confirm your password"
                   type={showConfirmPassword ? "text" : "password"}
                   id="confirmPassword"
                   value={confirmPassword}
@@ -188,8 +209,10 @@ const Signup = () => {
                 </button>
               </div>
             </div>
-            <div className="field_gender">
-              <label>Gender:</label>
+
+            {/* Gender Selection */}
+            <fieldset className="field_gender">
+              <legend>Gender:</legend>
               <div className="gender-container">
                 <label>
                   <input
@@ -212,14 +235,20 @@ const Signup = () => {
                   Female
                 </label>
               </div>
-            </div>
+            </fieldset>
+
+            {/* Error or Success Message */}
             {errorMessage && <div className="error">{errorMessage}</div>}
             {successMessage && <div className="success">{successMessage}</div>}
+
+            {/* Submit Button */}
             <button className="left_btn" type="submit" disabled={isLoading}>
               {isLoading ? "Signing up..." : "Signup"}
             </button>
           </form>
         </div>
+
+        {/* Right Section - Redirect to Login */}
         <div className="right-sign">
           <h1>Already have an account?</h1>
           <Link to="/login">

@@ -10,7 +10,6 @@ import connectMongoDBSession from "connect-mongodb-session";
 import path from "path";
 import { fileURLToPath } from "url";
 import axios from "axios";
-
 // 🧠 Optional: import helmet for security
 // import helmet from "helmet";
 
@@ -20,6 +19,7 @@ import chatRoutes from "./routes/chatRoutes.js";
 import questionnaireRoutes from "./routes/questionnaireRoutes.js";
 import analyticsRoutes from "./routes/analyticRoutes.js";
 import lifeManagementRoutes from "./routes/lifemanagement.js";
+import Profile from "./controller/profileController.js";
 
 // 📁 Path & Env Setup
 const __filename = fileURLToPath(import.meta.url);
@@ -97,6 +97,7 @@ app.use("/api/chat", chatRoutes); // Web chat or logs, not AI proxy
 app.use("/api/questionnaire", questionnaireRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/lifemanagement", lifeManagementRoutes);
+app.use("/api/profile", Profile);
 
 // ✅ Unified FastAPI proxy with Authorization support
 const forwardPost = async (req, res, endpoint) => {

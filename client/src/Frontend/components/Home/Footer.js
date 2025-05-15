@@ -8,7 +8,7 @@ import {
   faLinkedinIn,
   faInstagram,
 } from "@fortawesome/free-brands-svg-icons";
-import OurLogo from "../../../assets/img/latest_logo.svg";
+import OurLogo from "../../../assets/latest_logo.png";
 
 import "../styles/footer.css";
 

@@ -278,7 +278,9 @@ export const getChatByID = async (req, res) => {
 
 export const getChatsByUser = async (req, res) => {
   try {
-    const chats = await AIChat.find({ userId: req.params.userId }).sort({ createdAt: -1 });
+    const chats = await AIChat.find({ userId: req.params.userId }).sort({
+      createdAt: -1,
+    });
     res.json(chats);
   } catch (err) {
     res.status(500).json({ message: "Error fetching chat logs" });

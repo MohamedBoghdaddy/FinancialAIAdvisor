@@ -1,7 +1,7 @@
 import React from "react";
 import { Row, Col } from "react-bootstrap";
 import "../styles/Home.css";
-import MissionImage from "../../../assets/img/mission.jpg";
+import MissionImage from "../../../assets/mission.jpg";
 
 const StorytellingSection = () => {
   return (

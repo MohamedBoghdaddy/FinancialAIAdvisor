@@ -14,7 +14,7 @@ import { useAuthContext } from "../../../context/AuthContext";
 import { ErrorBoundary } from "react-error-boundary";
 import "../styles/AIChat.css";
 
-const API_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+const API_URL =  "http://localhost:8000";
 
 const languageOptions = [
   { label: "Arabic", value: "ar" },

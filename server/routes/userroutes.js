@@ -94,7 +94,12 @@ router.put("/meta/login", updateLoginMeta); // Called on login
 
 router.put("/admin/update-user/:id", updateUserRoleOrPassword);
 
-router.put("/admin/update-role/:id", auth, authorizeRoles("admin"), updateUserRole);
+router.put(
+  "/admin/update-role/:id",
+  auth,
+  authorizeRoles("admin"),
+  updateUserRole
+);
 
 // ✅ Fetch profile of the currently authenticated user
 router.get("/profile", auth, async (req, res) => {

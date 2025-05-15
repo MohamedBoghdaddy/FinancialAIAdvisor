@@ -1,15 +1,32 @@
-/* General Profile Container */
-.profile-container {
-  max-width: 600px;
+/* ================================
+   ✅ General Container & Headings
+================================ */
+.profile-container,
+.survey-container,
+.photo-upload-container,
+.life-management-container {
+  max-width: 800px;
   margin: 50px auto;
   padding: 20px;
-  background-color: #f4f6f9;
+  background-color: #ffffff;
   border-radius: 10px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
   text-align: center;
 }
 
-/* Profile Card */
+h2, h3, h4 {
+  color: #2c3e50;
+}
+
+.description {
+  font-size: 14px;
+  color: #7f8c8d;
+  margin-bottom: 20px;
+}
+
+/* ================================
+   ✅ Profile Card & Icon
+================================ */
 .profile-card {
   background: white;
   padding: 25px;
@@ -20,110 +37,208 @@
   align-items: center;
 }
 
-/* Profile Icon */
 .profile-icon {
   font-size: 80px;
   color: #3498db;
   margin-bottom: 15px;
 }
 
-/* Profile Info */
-.profile-info h3 {
-  margin: 10px 0;
-  color: #2c3e50;
-  font-size: 22px;
+/* ================================
+   ✅ Question Block + Form Inputs
+================================ */
+.question-block {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  text-align: left;
+  box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.1);
 }
 
-.profile-info p {
+label {
+  display: block;
   font-size: 16px;
-  color: #7f8c8d;
-  margin: 5px 0;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: #34495e;
 }
 
-/* Profile Edit Mode */
-.profile-edit {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+input:not(.chat-input),
+select,
+textarea {
   width: 100%;
-  max-width: 350px;
-  margin-top: 10px;
-}
-
-.profile-edit input {
   padding: 10px;
-  border: 1px solid #bdc3c7;
+  margin-bottom: 15px;
+  border: 1px solid #ddd;
   border-radius: 5px;
-  transition: border-color 0.3s;
+  font-size: 16px;
+  transition: border-color 0.3s ease-in-out;
 }
 
-.profile-edit input:focus {
+input:focus,
+select:focus,
+textarea:focus {
   border-color: #3498db;
   outline: none;
 }
 
-/* Edit & Save Buttons */
-.edit-button,
-.profile-edit button {
-  margin-top: 15px;
-  background-color: #3498db;
-  color: white;
-  font-size: 16px;
-  font-weight: bold;
-  padding: 10px;
-  border: none;
+/* Slider */
+.slider {
+  width: 100%;
+  height: 8px;
+  background: #bdc3c7;
   border-radius: 5px;
-  cursor: pointer;
+  appearance: none;
   transition: background 0.3s;
 }
 
-.edit-button:hover,
-.profile-edit button:hover {
-  background-color: #2980b9;
-}
-/* Photo Upload Container */
-.photo-upload-container {
-  max-width: 400px;
-  margin: 40px auto;
-  padding: 20px;
-  background-color: #f4f6f9;
-  border-radius: 8px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-  text-align: center;
+.slider:hover {
+  background: #3498db;
 }
 
-/* Form Styling */
+.slider-value {
+  font-size: 18px;
+  font-weight: bold;
+  color: #2c3e50;
+  margin-top: 5px;
+  display: block;
+}
+
+/* Step Tracker */
+.step-tracker {
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: #555;
+}
+
+/* ================================
+   ✅ Button Styles
+================================ */
+button {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  font-weight: bold;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: background-color 0.3s, transform 0.2s;
+}
+
+.nav-btn {
+  background-color: #3498db;
+  color: white;
+}
+
+.nav-btn:hover {
+  background-color: #2980b9;
+}
+
+.submit-btn {
+  background-color: #2ecc71;
+  color: white;
+}
+
+.submit-btn:hover {
+  background-color: #27ae60;
+}
+
+.edit-btn {
+  background-color: #101c28;
+  color: white;
+  font-size: 14px;
+  padding: 6px 10px;
+  margin-left: 10px;
+  border-radius: 5px;
+  display: inline-block;
+}
+
+.edit-btn:hover {
+  background-color: #1e3349;
+}
+
+.edit-all-btn {
+  background-color: #a91302;
+  color: white;
+  padding: 12px;
+  margin-top: 15px;
+  font-size: 16px;
+  border-radius: 5px;
+}
+
+.edit-all-btn:hover {
+  background-color: #d8200c;
+}
+
+/* ================================
+   ✅ Submitted Results
+================================ */
+.submitted-results {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 10px;
+  font-size: 16px;
+  color: #2c3e50;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.submitted-results h3 {
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+/* ================================
+   ✅ Loader
+================================ */
+.loader-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 2rem;
+}
+
+.loader {
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid #00b894;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ================================
+   ✅ Photo Upload Section
+================================ */
 #photo {
   display: flex;
   flex-direction: column;
   gap: 15px;
 }
 
-/* File Input Styling */
 .form-control {
   padding: 10px;
   border: 2px solid #bdc3c7;
   border-radius: 6px;
-  transition: border-color 0.3s, background 0.3s;
 }
 
 .form-control:focus {
   border-color: #3498db;
-  outline: none;
   background: #ecf6ff;
 }
 
-/* Upload Button */
 .upload-btn {
   background-color: #3498db;
   color: white;
   font-size: 16px;
   font-weight: bold;
   padding: 10px 15px;
-  border: none;
   border-radius: 5px;
-  cursor: pointer;
-  transition: background 0.3s, transform 0.2s;
 }
 
 .upload-btn:hover {
@@ -131,46 +246,98 @@
   transform: scale(1.03);
 }
 
-.upload-btn:active {
-  background-color: #2471a3;
-  transform: scale(0.98);
-}
-
-/* Status Messages */
-.upload-status,
-.text-danger {
-  font-size: 14px;
-  font-weight: bold;
-  margin-top: 10px;
-}
-
-/* Success Message */
 .upload-status {
   color: #2ecc71;
+  font-size: 14px;
+  font-weight: bold;
 }
 
-/* Error Message */
 .text-danger {
   color: #e74c3c;
+  font-size: 14px;
+  font-weight: bold;
 }
 
-/* Responsive Design */
-@media (max-width: 600px) {
-  .photo-upload-container {
-    max-width: 90%;
-    padding: 15px;
-  }
-
-  .upload-btn {
-    font-size: 14px;
-    padding: 8px 12px;
-  }
+/* ================================
+   ✅ Life Management Card
+================================ */
+.life-management-card {
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* Responsive Design */
+.life-management-card .card-header {
+  background-color: #f8f9fa;
+  padding: 1.5rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.life-management-card .card-header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #212529;
+}
+
+.form-label {
+  color: #495057;
+  font-weight: 500;
+}
+
+.form-select,
+textarea.form-control {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.submit-button {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  margin-top: 1rem;
+}
+
+.goals-section {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid #e9ecef;
+}
+
+.goal-item {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid #e9ecef;
+  margin-bottom: 0.5rem;
+}
+
+/* ================================
+   ✅ Alerts
+================================ */
+.alert {
+  border-radius: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.alert-success {
+  background-color: #d4edda;
+  border-color: #c3e6cb;
+  color: #155724;
+}
+
+.alert-danger {
+  background-color: #f8d7da;
+  border-color: #f5c6cb;
+  color: #721c24;
+}
+
+/* ================================
+   ✅ Responsive Design
+================================ */
 @media (max-width: 768px) {
-  .profile-container {
-    max-width: 90%;
+  .profile-container,
+  .survey-container,
+  .photo-upload-container {
+    width: 90%;
     padding: 15px;
   }
 
@@ -178,17 +345,27 @@
     font-size: 60px;
   }
 
-  .profile-info h3 {
-    font-size: 20px;
-  }
-
-  .profile-info p {
+  button {
     font-size: 14px;
+    padding: 10px;
   }
 
-  .edit-button,
-  .profile-edit button {
+  .edit-btn,
+  .edit-all-btn {
     font-size: 14px;
     padding: 8px;
+  }
+
+  .life-management-container {
+    margin: 1rem;
+  }
+
+  .life-management-card .card-header {
+    padding: 1rem;
+  }
+
+  .goals-section {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
   }
 }

@@ -2,8 +2,8 @@ import React from "react";
 import "../../styles/login.css"; // Adjust the path as needed
 import { Link, useNavigate } from "react-router-dom";
 import { useLogin } from "../../../../hooks/useLogin";
-import ShowPass from '../../../../assets/img/eye.svg'
-import ShowPassOff from '../../../../assets/img/eye-off.svg'
+import ShowPass from '../../../../assets/eye.svg'
+import ShowPassOff from '../../../../assets/eye-off.svg'
 
 
 const Login = () => {

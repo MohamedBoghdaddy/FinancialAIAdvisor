@@ -8,7 +8,7 @@ import {
   faClock,
 } from "@fortawesome/free-solid-svg-icons";
 import "../styles/Home.css";
-import AboutUs from "../../../assets/img/about.png";
+import AboutUs from "../../../assets/about.png";
 
 const WhoWeAre = () => {
   const features = [

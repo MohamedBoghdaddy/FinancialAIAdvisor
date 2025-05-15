@@ -28,7 +28,11 @@ export const upload = multer({ storage });
 
 // JWT Token creation
 const createToken = (user) =>
-  jwt.sign({ id: user._id, role: user.role, username: user.username }, JWT_SECRET, { expiresIn: "30d" });
+  jwt.sign(
+    { id: user._id, role: user.role, username: user.username },
+    JWT_SECRET,
+    { expiresIn: "30d" }
+  );
 
 // REGISTER USER
 export const registerUser = async (req, res) => {
@@ -37,20 +41,39 @@ export const registerUser = async (req, res) => {
     const existingUser = await User.findOne({ $or: [{ username }, { email }] });
     if (existingUser) {
       const field = existingUser.username === username ? "username" : "email";
-      return res.status(400).json({ message: `User with this ${field} already exists.` });
+      return res
+        .status(400)
+        .json({ message: `User with this ${field} already exists.` });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await User.create({ username, email, password: hashedPassword, firstName, lastName, gender });
+    const user = await User.create({
+      username,
+      email,
+      password: hashedPassword,
+      firstName,
+      lastName,
+      gender,
+    });
 
     const token = createToken(user);
     res.status(201).json({
       token,
-      user: { id: user._id, username, email, role: user.role, gender, firstName, lastName }
+      user: {
+        id: user._id,
+        username,
+        email,
+        role: user.role,
+        gender,
+        firstName,
+        lastName,
+      },
     });
   } catch (error) {
     console.error("Registration Error:", error);
-    res.status(500).json({ message: "Registration failed", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Registration failed", error: error.message });
   }
 };
 
@@ -60,10 +83,14 @@ export const loginUser = async (req, res) => {
   try {
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ message: "User not found" });
-    if (user.blocked) return res.status(403).json({ message: "Your account has been blocked by the admin." });
+    if (user.blocked)
+      return res
+        .status(403)
+        .json({ message: "Your account has been blocked by the admin." });
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(401).json({ message: "Invalid credentials" });
+    if (!isMatch)
+      return res.status(401).json({ message: "Invalid credentials" });
 
     const token = createToken(user);
     res.cookie("token", token, {
@@ -139,8 +166,11 @@ export const updateUserProfile = async (req, res) => {
     const updates = { ...req.body };
     if (req.file) updates.profilePhoto = `/uploads/${req.file.filename}`;
 
-    const updatedUser = await User.findByIdAndUpdate(userId, updates, { new: true }).select("-password");
-    if (!updatedUser) return res.status(404).json({ message: "User not found" });
+    const updatedUser = await User.findByIdAndUpdate(userId, updates, {
+      new: true,
+    }).select("-password");
+    if (!updatedUser)
+      return res.status(404).json({ message: "User not found" });
 
     res.status(200).json({ message: "Profile updated", user: updatedUser });
   } catch (error) {
@@ -192,7 +222,9 @@ export const updateLoginMeta = async (req, res) => {
 
     res.status(200).json({ success: true, user });
   } catch (err) {
-    res.status(500).json({ success: false, message: "Error updating login metadata" });
+    res
+      .status(500)
+      .json({ success: false, message: "Error updating login metadata" });
   }
 };
 

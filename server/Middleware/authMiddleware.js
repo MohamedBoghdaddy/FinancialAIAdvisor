@@ -32,7 +32,6 @@ export const auth = (req, res, next) => {
   }
 };
 
-
 /**
  * ✅ Role-based Middleware
  * Example: authorizeRoles("admin", "employee")

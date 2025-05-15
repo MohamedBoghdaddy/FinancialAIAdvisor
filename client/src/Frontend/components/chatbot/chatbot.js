@@ -11,7 +11,7 @@ import {
   faUserTie,
 } from "@fortawesome/free-solid-svg-icons";
 import "../styles/chat.css";
-import logo from "../../../assets/img/latest_logo.svg";
+import logo from "../../../assets/latest_logo.png";
 
 const Chatbot = () => {
   const [messages, setMessages] = useState([]);

@@ -3,7 +3,7 @@ import { Container, Row, Col, Button } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import "../styles/Home.css";
 // import logoblack from "../assets/images/logo-black.png";
-import HeroImage from "../../../assets/img/hero.jpg";
+import HeroImage from "../../../assets/hero.jpg";
 
 const HeroSection = () => {
   return (
