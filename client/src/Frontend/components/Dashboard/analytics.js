@@ -14,7 +14,7 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
-import "../styles/Analytics.css"; // Ensure you have this imported
+import "../styles/Analytics.css";
 import { BsArrowUp, BsArrowDown } from "react-icons/bs";
 import Badge from "../../../ui/badge/Badge";
 import amazon from "../../../assets/icons8-amazon-100.svg";
@@ -24,7 +24,6 @@ import meta from "../../../assets/icons8-meta-96.svg";
 import tesla from "../../../assets/icons8-tesla-96.svg";
 import netflix from "../../../assets/icons8-netflix-80.svg";
 
-// Stock tickers
 const stockSymbols = [
   "AAPL",
   "META",
@@ -43,7 +42,6 @@ const stockSymbols = [
   "PG",
 ];
 
-// Company logos mapping
 const stockIcons = {
   AAPL: apple,
   AMZN: amazon,
@@ -66,8 +64,9 @@ const API_URL =
   process.env.REACT_APP_API_URL || "http://localhost:4000/api/analytics";
 
 export default function AnalyticsReport() {
-  const { state, fetchProfile, handleDownload } = useDashboard();
-  const [loading, setLoading] = useState(true);
+  const { state = {}, fetchProfile, handleDownload } = useDashboard() || {};
+  const { profile = {}, reports = [] } = state;
+  const [loadingAnalytics, setLoadingAnalytics] = useState(true);
   const [riskToleranceData, setRiskToleranceData] = useState([]);
   const [lifestyleData, setLifestyleData] = useState([]);
   const [metrics, setMetrics] = useState({});
@@ -79,7 +78,6 @@ export default function AnalyticsReport() {
           axios.get(`${API_URL}/risk-tolerance`),
           axios.get(`${API_URL}/lifestyle`),
         ]);
-
         setRiskToleranceData(Array.isArray(riskRes.data) ? riskRes.data : []);
         setLifestyleData(
           Array.isArray(lifestyleRes.data) ? lifestyleRes.data : []
@@ -87,11 +85,11 @@ export default function AnalyticsReport() {
       } catch (error) {
         console.error("❌ Error fetching analytics:", error);
       } finally {
-        setLoading(false);
+        setLoadingAnalytics(false);
       }
     };
 
-    fetchProfile();
+    if (fetchProfile) fetchProfile();
     fetchAnalytics();
   }, [fetchProfile]);
 
@@ -104,7 +102,6 @@ export default function AnalyticsReport() {
           const res = await axios.get("http://localhost:8000/historical", {
             params: { symbol, period: "1d" },
           });
-
           const data = res.data.data;
           const closePrices = data
             .map((d) => d.Close ?? d.close)
@@ -154,13 +151,12 @@ export default function AnalyticsReport() {
           <h1>Financial & Investment Analytics</h1>
         </div>
 
-        {/* ✅ Risk Tolerance Chart */}
         <h2>Risk Tolerance Distribution</h2>
         <div
           className="chart-container"
           style={{ width: "60%", margin: "auto" }}
         >
-          {loading ? (
+          {loadingAnalytics ? (
             <Spinner animation="border" role="status">
               <span className="sr-only">Loading...</span>
             </Spinner>
@@ -169,26 +165,26 @@ export default function AnalyticsReport() {
           )}
         </div>
 
-        {/* ✅ Profile Section */}
-        {state.profile && (
+        {profile.name ? (
           <>
             <h2>User Profile</h2>
             <Table striped bordered hover>
               <tbody>
                 <tr>
                   <td>Name</td>
-                  <td>{state.profile.name}</td>
+                  <td>{profile.name}</td>
                 </tr>
                 <tr>
                   <td>Email</td>
-                  <td>{state.profile.email}</td>
+                  <td>{profile.email}</td>
                 </tr>
               </tbody>
             </Table>
           </>
+        ) : (
+          <p>User profile not available.</p>
         )}
 
-        {/* ✅ Financial Preferences Section */}
         <h2>Lifestyle Preferences</h2>
         {lifestyleData.length > 0 ? (
           <Table striped bordered hover>
@@ -211,7 +207,6 @@ export default function AnalyticsReport() {
           <p>No lifestyle data available.</p>
         )}
 
-        {/* ✅ Stock Metrics Section */}
         <h2>Tracked Stocks</h2>
         <div className="grid-container">
           {Object.entries(metrics).map(([symbol, { latest, change }]) => (
@@ -239,12 +234,11 @@ export default function AnalyticsReport() {
           ))}
         </div>
 
-        {/* ✅ Reports Section */}
         <h2>Generated Reports</h2>
         <div className="report-container">
           <div className="report-list">
-            {state.reports?.length > 0 ? (
-              state.reports.map((report) => (
+            {Array.isArray(reports) && reports.length > 0 ? (
+              reports.map((report) => (
                 <div key={report.id} className="report-card">
                   <BsFileEarmarkText className="report-icon" />
                   <div className="report-info">

@@ -14,14 +14,11 @@ const API_URL = process.env.REACT_APP_API_URL || "http://localhost:4000";
 
 export const DashboardContext = createContext();
 
-// Initial state factory to avoid shared reference issues on reset
+// Initial state factory with improved structure
 const createInitialState = () => ({
   profile: null,
   survey: null,
-  analytics: {
-    riskTolerance: [],
-    lifestyle: [],
-  },
+  analytics: { riskTolerance: [], lifestyle: [] },
   marketData: {
     stockHistory: null,
     goldHistory: null,
@@ -50,10 +47,7 @@ const dashboardReducer = (state, action) => {
     case "FETCH_START":
       return {
         ...state,
-        loading: {
-          ...state.loading,
-          [action.payload]: true,
-        },
+        loading: { ...state.loading, [action.payload]: true },
         error: null,
       };
     case "FETCH_PROFILE_SUCCESS":
@@ -62,41 +56,30 @@ const dashboardReducer = (state, action) => {
         profile: action.payload,
         lastUpdated: new Date().toISOString(),
         loading: { ...state.loading, profile: false },
-        error: null,
       };
     case "FETCH_MARKET_DATA_SUCCESS":
       return {
         ...state,
-        marketData: {
-          ...state.marketData,
-          ...action.payload,
-        },
+        marketData: { ...state.marketData, ...action.payload },
         loading: { ...state.loading, marketData: false },
-        error: null,
       };
     case "FETCH_MARKET_PREDICTIONS_SUCCESS":
       return {
         ...state,
-        marketData: {
-          ...state.marketData,
-          ...action.payload,
-        },
+        marketData: { ...state.marketData, ...action.payload },
         loading: { ...state.loading, predictions: false },
-        error: null,
       };
     case "FETCH_AI_ADVICE_SUCCESS":
       return {
         ...state,
         aiAdvice: action.payload,
         loading: { ...state.loading, aiAdvice: false },
-        error: null,
       };
     case "FETCH_GOAL_PLAN_SUCCESS":
       return {
         ...state,
         goalPlan: action.payload,
         loading: { ...state.loading, goalPlan: false },
-        error: null,
       };
     case "UPDATE_PROFILE":
       return {
@@ -104,7 +87,6 @@ const dashboardReducer = (state, action) => {
         profile: action.payload,
         lastUpdated: new Date().toISOString(),
         loading: { ...state.loading, profile: false },
-        error: null,
       };
     case "FETCH_ERROR":
       return {
@@ -122,16 +104,18 @@ const dashboardReducer = (state, action) => {
   }
 };
 
-// Custom hook to manage token with sync from localStorage
 const useAuthToken = () => {
   const [token, setToken] = useState(() => {
+    const validateToken = (t) => t && t.split(".").length === 3;
+
     const localToken = localStorage.getItem("token");
-    if (localToken) return localToken;
+    if (localToken && validateToken(localToken)) return localToken;
+
     const userString = localStorage.getItem("user");
     if (userString) {
       try {
         const user = JSON.parse(userString);
-        return user.token || null;
+        if (user?.token && validateToken(user.token)) return user.token;
       } catch {
         return null;
       }
@@ -140,69 +124,76 @@ const useAuthToken = () => {
   });
 
   useEffect(() => {
-    const handleStorageChange = (event) => {
-      if (event.key === "token" || event.key === "user") {
-        const localToken = localStorage.getItem("token");
-        setToken(localToken);
-      }
+    const handler = () => {
+      const newToken =
+        localStorage.getItem("token") ||
+        JSON.parse(localStorage.getItem("user") || "{}")?.token;
+      setToken(newToken);
     };
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
+    window.addEventListener("storage", handler);
+    return () => window.removeEventListener("storage", handler);
   }, []);
 
   return token;
 };
 
-
-
 export const DashboardProvider = ({ children }) => {
   const [state, dispatch] = useReducer(dashboardReducer, initialState);
   const token = useAuthToken();
-  const user = useAuthToken();
+
   const handleError = useCallback((error, defaultMessage) => {
     const message = error.response?.data?.message || defaultMessage;
+    console.error("API Error:", {
+      message: error.message,
+      code: error.code,
+      config: error.config,
+      response: error.response?.data,
+    });
     toast.error(`❌ ${message}`);
-    console.error("Error:", error);
     return message;
   }, []);
 
-  const fetchProfile = useCallback(async () => {
+  const fetchProfile = useCallback(() => {
     if (!token) {
       dispatch({ type: "FETCH_ERROR", payload: "Authentication required" });
-      return;
+      return Promise.resolve();
     }
+
     dispatch({ type: "FETCH_START", payload: "profile" });
-
     const controller = new AbortController();
-    try {
-      const res = await axios.get(`${API_URL}/api/profile/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-        timeout: 10000,
-        withCredentials: true,
-        signal: controller.signal,
-      });
-      dispatch({ type: "FETCH_PROFILE_SUCCESS", payload: res.data.data });
-    } catch (err) {
-      if (axios.isCancel(err)) {
-        console.log("Fetch profile request canceled");
-        return;
-      }
 
-      let errorMessage = "Failed to load profile";
-      if (err.code === "ERR_NETWORK") {
-        errorMessage = "Network error. Please check your connection.";
-      } else {
-        errorMessage = handleError(err, errorMessage);
+    const fetchData = async () => {
+      try {
+        const res = await axios.get(`${API_URL}/api/profile/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+          timeout: 10000,
+          signal: controller.signal,
+        });
+
+        dispatch({ type: "FETCH_PROFILE_SUCCESS", payload: res.data.data });
+      } catch (err) {
+        if (axios.isCancel(err)) return;
+
+        let errorMessage = "Failed to load profile";
+        if (err.code === "ERR_NETWORK") {
+          errorMessage = "Network error. Please check your connection.";
+        } else if (err.response?.status === 401) {
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          errorMessage = "Session expired. Please login again.";
+        }
+        dispatch({ type: "FETCH_ERROR", payload: errorMessage });
       }
-      dispatch({ type: "FETCH_ERROR", payload: errorMessage });
-    }
+    };
+
+    fetchData();
     return () => controller.abort();
-  }, [token,user, handleError]);
+  }, [token]);
 
   const submitProfile = useCallback(
     async (profileData) => {
       if (!token) {
-        toast.error("❌ User not authenticated. Please login again.");
+        toast.error("❌ Authentication required");
         window.location.href = "/login";
         return;
       }
@@ -212,24 +203,26 @@ export const DashboardProvider = ({ children }) => {
       try {
         const res = await axios.post(`${API_URL}/api/profile`, profileData, {
           headers: {
-            Authorization: token ? `Bearer ${token}` : "",
+            Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          withCredentials: true,
+          timeout: 15000,
         });
 
         dispatch({ type: "UPDATE_PROFILE", payload: res.data.data });
         toast.success("✅ Profile saved successfully!");
         return res.data;
       } catch (err) {
-        console.error("Profile submission error:", err);
-
-
         let errorMessage = "Profile submission failed";
         if (err.code === "ERR_NETWORK") {
-          errorMessage = "Network error. Please check your connection.";
+          errorMessage = "Network error. Check your connection";
+        } else if (err.response?.status === 401) {
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          errorMessage = "Session expired. Please login again.";
+          window.location.reload();
         } else if (err.response?.status === 400) {
-          errorMessage = err.response.data.message || "Invalid request data";
+          errorMessage = err.response.data.message || "Invalid data format";
         }
 
         toast.error(`❌ ${errorMessage}`);
@@ -237,9 +230,10 @@ export const DashboardProvider = ({ children }) => {
         throw err;
       }
     },
-    [token, user]
+    [token]
   );
 
+  // Unified data fetcher for market endpoints
   const fetchMarketData = useCallback(
     async (type, options = {}) => {
       if (!token) return;
@@ -247,26 +241,19 @@ export const DashboardProvider = ({ children }) => {
       dispatch({ type: "FETCH_START", payload: "marketData" });
 
       try {
-        let endpoint;
-        const { symbol = "AAPL", period = "1y" } = options;
+        const endpoints = {
+          stock: `/market/stock/historical?symbol=${
+            options.symbol || "AAPL"
+          }&period=${options.period || "1y"}`,
+          gold: `/market/gold/history?period=${options.period || "1y"}`,
+          realEstate: `/market/real-estate/history?period=${
+            options.period || "1y"
+          }`,
+        };
 
-        switch (type) {
-          case "stock":
-            endpoint = `/market/stock/historical?symbol=${symbol}&period=${period}`;
-            break;
-          case "gold":
-            endpoint = `/market/gold/history?period=${period}`;
-            break;
-          case "realEstate":
-            endpoint = `/market/real-estate/history?period=${period}`;
-            break;
-          default:
-            throw new Error("Invalid market type");
-        }
-
-        const res = await axios.get(`${API_URL}${endpoint}`, {
+        const res = await axios.get(`${API_URL}${endpoints[type]}`, {
           headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
+          timeout: 10000,
         });
 
         dispatch({
@@ -274,13 +261,17 @@ export const DashboardProvider = ({ children }) => {
           payload: { [`${type}History`]: res.data.data },
         });
       } catch (err) {
-        const errorMessage = handleError(err, `Failed to fetch ${type} data`);
-        dispatch({ type: "FETCH_ERROR", payload: errorMessage });
+        handleError(err, `Failed to fetch ${type} data`);
+        dispatch({
+          type: "FETCH_ERROR",
+          payload: `Failed to load ${type} data`,
+        });
       }
     },
     [token, handleError]
   );
 
+  // Unified prediction fetcher
   const fetchPredictions = useCallback(
     async (type, options = {}) => {
       if (!token) return;
@@ -288,26 +279,15 @@ export const DashboardProvider = ({ children }) => {
       dispatch({ type: "FETCH_START", payload: "predictions" });
 
       try {
-        let endpoint;
-        const { symbol = "AAPL", days = 15 } = options;
+        const endpoints = {
+          stock: `/market/stock/predict?symbol=${options.symbol || "AAPL"}`,
+          gold: `/market/gold/predict?days=${options.days || 15}`,
+          realEstate: `/market/real-estate/predict?days=${options.days || 15}`,
+        };
 
-        switch (type) {
-          case "stock":
-            endpoint = `/market/stock/predict?symbol=${symbol}`;
-            break;
-          case "gold":
-            endpoint = `/market/gold/predict?days=${days}`;
-            break;
-          case "realEstate":
-            endpoint = `/market/real-estate/predict?days=${days}`;
-            break;
-          default:
-            throw new Error("Invalid prediction type");
-        }
-
-        const res = await axios.get(`${API_URL}${endpoint}`, {
+        const res = await axios.get(`${API_URL}${endpoints[type]}`, {
           headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
+          timeout: 10000,
         });
 
         dispatch({
@@ -315,16 +295,17 @@ export const DashboardProvider = ({ children }) => {
           payload: { [`${type}Predictions`]: res.data.data },
         });
       } catch (err) {
-        const errorMessage = handleError(
-          err,
-          `Failed to fetch ${type} predictions`
-        );
-        dispatch({ type: "FETCH_ERROR", payload: errorMessage });
+        handleError(err, `Failed to fetch ${type} predictions`);
+        dispatch({
+          type: "FETCH_ERROR",
+          payload: `Failed to load ${type} predictions`,
+        });
       }
     },
     [token, handleError]
   );
 
+  // AI advice and goal plan handlers
   const fetchAIAdvice = useCallback(
     async (profileData) => {
       if (!token) return;
@@ -337,15 +318,14 @@ export const DashboardProvider = ({ children }) => {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          withCredentials: true,
+          timeout: 20000,
         });
 
         dispatch({ type: "FETCH_AI_ADVICE_SUCCESS", payload: res.data.data });
         return res.data;
       } catch (err) {
-
-        const errorMessage = handleError(err, "Failed to get AI advice");
-        dispatch({ type: "FETCH_ERROR", payload: errorMessage });
+        handleError(err, "Failed to get AI advice");
+        dispatch({ type: "FETCH_ERROR", payload: "Failed to generate advice" });
         throw err;
       }
     },
@@ -367,16 +347,15 @@ export const DashboardProvider = ({ children }) => {
               Authorization: `Bearer ${token}`,
               "Content-Type": "application/json",
             },
-            withCredentials: true,
+            timeout: 20000,
           }
         );
 
         dispatch({ type: "FETCH_GOAL_PLAN_SUCCESS", payload: res.data.data });
         return res.data;
       } catch (err) {
-
-        const errorMessage = handleError(err, "Failed to generate goal plan");
-        dispatch({ type: "FETCH_ERROR", payload: errorMessage });
+        handleError(err, "Failed to generate goal plan");
+        dispatch({ type: "FETCH_ERROR", payload: "Failed to create plan" });
         throw err;
       }
     },
@@ -387,7 +366,9 @@ export const DashboardProvider = ({ children }) => {
     dispatch({ type: "RESET_STATE" });
   }, []);
 
+  // Initial data loading
   useEffect(() => {
+    console.log("Initializing dashboard with API:", API_URL);
     fetchProfile();
   }, [fetchProfile]);
 

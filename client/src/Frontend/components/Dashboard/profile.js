@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext, useCallback } from "react";
+import PropTypes from "prop-types";
 import { useAuthContext } from "../../../context/AuthContext";
 import { DashboardContext } from "../../../context/DashboardContext";
 import { BsPersonCircle } from "react-icons/bs";
@@ -132,42 +133,79 @@ const Profile = () => {
   const [localLoading, setLocalLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  // Enhanced data loading with cleanup
+  // Expense management functions
+  const addCustomExpense = useCallback(() => {
+    setFormData((prev) => ({
+      ...prev,
+      customExpenses: [
+        ...(prev.customExpenses || []),
+        { name: "", amount: "" },
+      ],
+    }));
+  }, []);
+
+  const removeCustomExpense = useCallback((index) => {
+    setFormData((prev) => ({
+      ...prev,
+      customExpenses: (prev.customExpenses || []).filter((_, i) => i !== index),
+    }));
+  }, []);
+
+  const updateCustomExpense = useCallback((index, key, value) => {
+    setFormData((prev) => {
+      const updated = [...(prev.customExpenses || [])];
+      updated[index] = { ...updated[index], [key]: value };
+      return { ...prev, customExpenses: updated };
+    });
+  }, []);
+
   useEffect(() => {
+    const controller = new AbortController();
     let isMounted = true;
 
-    const loadProfileData = async () => {
+    const loadProfile = async () => {
+      if (!user?.token) {
+        setLocalLoading(false);
+        return;
+      }
+
       try {
-        if (user?.token) {
-          await fetchProfile();
-          if (isMounted) {
-            setFormData(dashState.profile?.answers || {});
-            setEditMode(false);
-          }
+        await fetchProfile();
+        if (isMounted) {
+          setFormData(dashState.profile?.answers || {});
+          setEditMode(false);
         }
       } catch (err) {
-        console.error("Profile load error:", err);
-        toast.error("Failed to load profile data");
+        if (isMounted) {
+          console.error("Profile load error:", err);
+          toast.error(err.message || "Failed to load profile data");
+        }
       } finally {
         if (isMounted) setLocalLoading(false);
       }
     };
 
-    loadProfileData();
+    loadProfile();
 
     return () => {
       isMounted = false;
+      controller.abort();
     };
-  }, [user, dashState.profile, fetchProfile]);
+  }, [user, fetchProfile, dashState.profile]);
 
-  // Memoized field validation
+  useEffect(() => {
+    if (dashState.profile?.answers && !editMode) {
+      setFormData(dashState.profile.answers);
+    }
+  }, [dashState.profile, editMode]);
+
   const validateField = useCallback((id, value) => {
     const question = questions.find((q) => q.id === id);
     if (!question) return "";
 
     if (question.type === "number") {
-      if (value === "") return "This field is required";
       const numValue = Number(value);
+      if (value === "") return "This field is required";
       if (question.min !== undefined && numValue < question.min) {
         return `Minimum value is ${question.min}`;
       }
@@ -183,7 +221,6 @@ const Profile = () => {
     return "";
   }, []);
 
-  // Optimized change handler
   const handleChange = useCallback(
     (id, value) => {
       const error = validateField(id, value);
@@ -193,7 +230,6 @@ const Profile = () => {
     [validateField]
   );
 
-  // Navigation handlers
   const handleNext = useCallback(() => {
     const currentQuestion = questions[step];
     const error = validateField(
@@ -213,7 +249,6 @@ const Profile = () => {
     setStep((prev) => Math.max(prev - 1, 0));
   }, []);
 
-  // Enhanced submit handler
   const handleSubmit = useCallback(async () => {
     const currentQuestion = questions[step];
     const error = validateField(
@@ -243,47 +278,12 @@ const Profile = () => {
       toast.success("Profile saved successfully!");
     } catch (error) {
       console.error("Profile save error:", error);
-      toast.error(error.response?.data?.message || "Failed to save profile");
+      const message = error.response?.data?.message || error.message;
+      toast.error(message || "Failed to save profile");
     } finally {
       setSubmitting(false);
     }
   }, [step, formData, validateField, submitProfile]);
-
-  const handleEditAll = () => {
-    setEditMode(true);
-    setStep(0);
-  };
-
-  const handleEditSpecific = (index) => {
-    setEditMode(true);
-    setStep(index);
-  };
-
-  // Expense management
-  const addCustomExpense = useCallback(() => {
-    setFormData((prev) => ({
-      ...prev,
-      customExpenses: [
-        ...(prev.customExpenses || []),
-        { name: "", amount: "" },
-      ],
-    }));
-  }, []);
-
-  const removeCustomExpense = useCallback((index) => {
-    setFormData((prev) => ({
-      ...prev,
-      customExpenses: (prev.customExpenses || []).filter((_, i) => i !== index),
-    }));
-  }, []);
-
-  const updateCustomExpense = useCallback((index, key, value) => {
-    setFormData((prev) => {
-      const updated = [...(prev.customExpenses || [])];
-      updated[index] = { ...updated[index], [key]: value };
-      return { ...prev, customExpenses: updated };
-    });
-  }, []);
 
   const renderQuestionInput = (question) => {
     const value = formData[question.id] ?? "";
@@ -292,7 +292,7 @@ const Profile = () => {
     switch (question.type) {
       case "number":
         return (
-          <>
+          <div className="input-group">
             <input
               type="number"
               value={value}
@@ -300,18 +300,20 @@ const Profile = () => {
               min={question.min}
               max={question.max}
               className="input-field"
+              aria-label={question.text}
             />
             {error && <span className="error-text">{error}</span>}
-          </>
+          </div>
         );
 
       case "select":
         return (
-          <>
+          <div className="input-group">
             <select
               value={value}
               onChange={(e) => handleChange(question.id, e.target.value)}
               className="input-field"
+              aria-label={question.text}
             >
               <option value="">Select an option</option>
               {question.options.map((opt) => (
@@ -321,40 +323,44 @@ const Profile = () => {
               ))}
             </select>
             {error && <span className="error-text">{error}</span>}
-          </>
+          </div>
         );
 
       case "slider":
         return (
-          <div className="slider-container">
-            <input
-              type="range"
-              min={question.min || 1}
-              max={question.max || 10}
-              value={value || 5}
-              onChange={(e) => handleChange(question.id, e.target.value)}
-              className="slider"
-            />
-            <div className="slider-labels">
-              <span>{question.labels?.[0] || "Low"}</span>
-              <span className="slider-value">{value || 5}</span>
-              <span>{question.labels?.[1] || "High"}</span>
+          <div className="input-group slider-container">
+            <div className="slider-wrapper">
+              <input
+                type="range"
+                min={question.min}
+                max={question.max}
+                value={value || 5}
+                onChange={(e) => handleChange(question.id, e.target.value)}
+                className="slider"
+                aria-label={question.text}
+              />
+              <div className="slider-labels">
+                <span>{question.labels[0]}</span>
+                <span className="slider-value">{value || 5}</span>
+                <span>{question.labels[1]}</span>
+              </div>
             </div>
           </div>
         );
 
       case "textarea":
         return (
-          <>
+          <div className="input-group">
             <textarea
               value={value}
               onChange={(e) => handleChange(question.id, e.target.value)}
               className="input-field"
-              placeholder={question.placeholder || "Write here..."}
+              placeholder={question.placeholder}
               rows={4}
+              aria-label={question.text}
             />
             {error && <span className="error-text">{error}</span>}
-          </>
+          </div>
         );
 
       default:
@@ -380,143 +386,223 @@ const Profile = () => {
         <BsPersonCircle className="profile-icon" />
 
         {dashState.profile?.answers && !editMode ? (
-          <div className="submitted-results">
-            <h3>📌 Your Responses</h3>
-            <div className="profile-summary">
-              {questions.map((q, index) => (
-                <div key={q.id} className="profile-item">
-                  <p>
-                    <strong>{q.text}:</strong>{" "}
-                    {formData[q.id]?.toString() || "Not answered"}
-                  </p>
-                  <button
-                    onClick={() => handleEditSpecific(index)}
-                    className="edit-btn"
-                  >
-                    ✏️ Edit
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            <button onClick={handleEditAll} className="edit-all-btn">
-              📝 Edit All Responses
-            </button>
-
-            {aiAdvice && (
-              <div className="ai-advice-section">
-                <h3>💡 AI Financial Recommendations</h3>
-                <div className="advice-summary">
-                  <p>{aiAdvice.summary}</p>
-                  <ul>
-                    {aiAdvice.advice?.map((tip, i) => (
-                      <li key={i}>✅ {tip}</li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            )}
-
-            {goalPlan && (
-              <div className="goal-plan-section">
-                <h3>🎯 Your Personalized Goal Plan</h3>
-                {goalPlan.map((g, i) => (
-                  <div key={i} className="goal-item">
-                    <h4>🏁 {g.goal}</h4>
-                    <ul>
-                      {g.milestones?.map((m, j) => (
-                        <li key={j}>
-                          📅 {m.task} by <strong>{m.target_date}</strong>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ) : questions[step] ? (
-          <div className="question-block">
-            <div className="progress-tracker">
-              <div
-                className="progress-bar"
-                style={{ width: `${(step / (questions.length - 1)) * 100}%` }}
-              ></div>
-              <span>
-                Question {step + 1} of {questions.length}
-              </span>
-            </div>
-
-            <div className="question-content">
-              <h3>{questions[step].text}</h3>
-              {renderQuestionInput(questions[step])}
-
-              {step === questions.length - 1 && (
-                <div className="custom-expense-section">
-                  <h4>➕ Additional Monthly Expenses</h4>
-                  {(formData.customExpenses || []).map((item, index) => (
-                    <div key={index} className="expense-row">
-                      <input
-                        type="text"
-                        placeholder="Expense name"
-                        value={item.name}
-                        onChange={(e) =>
-                          updateCustomExpense(index, "name", e.target.value)
-                        }
-                      />
-                      <input
-                        type="number"
-                        placeholder="Amount ($)"
-                        value={item.amount}
-                        onChange={(e) =>
-                          updateCustomExpense(index, "amount", e.target.value)
-                        }
-                      />
-                      <button
-                        onClick={() => removeCustomExpense(index)}
-                        className="remove-btn"
-                      >
-                        🗑️
-                      </button>
-                    </div>
-                  ))}
-                  <button
-                    onClick={addCustomExpense}
-                    className="add-expense-btn"
-                  >
-                    ➕ Add Another Expense
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <div className="navigation-buttons">
-              {step > 0 && (
-                <button onClick={handleBack} className="nav-btn back">
-                  ⬅️ Previous
-                </button>
-              )}
-              {step < questions.length - 1 ? (
-                <button onClick={handleNext} className="nav-btn next">
-                  Next Question ➡️
-                </button>
-              ) : (
-                <button
-                  onClick={handleSubmit}
-                  className="submit-btn"
-                  disabled={submitting}
-                >
-                  {submitting ? "Saving..." : "Save Profile ✅"}
-                </button>
-              )}
-            </div>
-          </div>
+          <ProfileView
+            formData={formData}
+            questions={questions}
+            aiAdvice={aiAdvice}
+            goalPlan={goalPlan}
+            onEditAll={() => {
+              setEditMode(true);
+              setStep(0);
+            }}
+            onEditSpecific={setStep}
+          />
         ) : (
-          <p className="error-message">❌ Error loading questions</p>
+          <QuestionFlow
+            step={step}
+            questions={questions}
+            formData={formData}
+            validationErrors={validationErrors}
+            handleBack={handleBack}
+            handleNext={handleNext}
+            handleSubmit={handleSubmit}
+            submitting={submitting}
+            updateCustomExpense={updateCustomExpense}
+            removeCustomExpense={removeCustomExpense}
+            addCustomExpense={addCustomExpense}
+            renderQuestionInput={renderQuestionInput}
+          />
         )}
       </div>
     </div>
   );
+};
+
+const ProfileView = ({
+  formData,
+  questions,
+  aiAdvice,
+  goalPlan,
+  onEditAll,
+  onEditSpecific,
+}) => (
+  <div className="submitted-results">
+    <h3>📌 Your Responses</h3>
+    <div className="profile-summary">
+      {questions.map((q, index) => (
+        <div key={q.id} className="profile-item">
+          <p>
+            <strong>{q.text}:</strong>{" "}
+            {formData[q.id]?.toString() || "Not answered"}
+          </p>
+          <button onClick={() => onEditSpecific(index)} className="edit-btn">
+            ✏️ Edit
+          </button>
+        </div>
+      ))}
+    </div>
+
+    <button onClick={onEditAll} className="edit-all-btn">
+      📝 Edit All Responses
+    </button>
+
+    {aiAdvice && (
+      <div className="ai-advice-section">
+        <h3>💡 AI Financial Recommendations</h3>
+        <div className="advice-summary">
+          <p>{aiAdvice.summary}</p>
+          <ul>
+            {aiAdvice.advice?.map((tip) => (
+              <li key={tip}>✅ {tip}</li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    )}
+
+    {goalPlan && (
+      <div className="goal-plan-section">
+        <h3>🎯 Your Personalized Goal Plan</h3>
+        {goalPlan.map((g) => (
+          <div key={g.goal} className="goal-item">
+            <h4>🏁 {g.goal}</h4>
+            <ul>
+              {g.milestones?.map((m) => (
+                <li key={`${g.goal}-${m.task}`}>
+                  📅 {m.task} by <strong>{m.target_date}</strong>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+);
+
+ProfileView.propTypes = {
+  formData: PropTypes.object.isRequired,
+  questions: PropTypes.arrayOf(PropTypes.object).isRequired,
+  aiAdvice: PropTypes.shape({
+    summary: PropTypes.string,
+    advice: PropTypes.arrayOf(PropTypes.string),
+  }),
+  goalPlan: PropTypes.arrayOf(
+    PropTypes.shape({
+      goal: PropTypes.string,
+      milestones: PropTypes.arrayOf(
+        PropTypes.shape({
+          task: PropTypes.string,
+          target_date: PropTypes.string,
+        })
+      ),
+    })
+  ),
+  onEditAll: PropTypes.func.isRequired,
+  onEditSpecific: PropTypes.func.isRequired,
+};
+
+const QuestionFlow = ({
+  step,
+  questions,
+  formData,
+  validationErrors,
+  handleBack,
+  handleNext,
+  handleSubmit,
+  submitting,
+  updateCustomExpense,
+  removeCustomExpense,
+  addCustomExpense,
+  renderQuestionInput,
+}) => (
+  <div className="question-block">
+    <div className="progress-tracker">
+      <div
+        className="progress-bar"
+        style={{ width: `${(step / (questions.length - 1)) * 100}%` }}
+      ></div>
+      <span>
+        Question {step + 1} of {questions.length}
+      </span>
+    </div>
+
+    <div className="question-content">
+      <h3>{questions[step].text}</h3>
+      {renderQuestionInput(questions[step])}
+
+      {step === questions.length - 1 && (
+        <div className="custom-expense-section">
+          <h4>➕ Additional Monthly Expenses</h4>
+          {(formData.customExpenses || []).map((item, index) => (
+            <div key={`expense-${index}`} className="expense-row">
+              <input
+                type="text"
+                placeholder="Expense name"
+                value={item.name}
+                onChange={(e) =>
+                  updateCustomExpense(index, "name", e.target.value)
+                }
+              />
+              <input
+                type="number"
+                placeholder="Amount ($)"
+                value={item.amount}
+                onChange={(e) =>
+                  updateCustomExpense(index, "amount", e.target.value)
+                }
+              />
+              <button
+                onClick={() => removeCustomExpense(index)}
+                className="remove-btn"
+              >
+                🗑️
+              </button>
+            </div>
+          ))}
+          <button onClick={addCustomExpense} className="add-expense-btn">
+            ➕ Add Another Expense
+          </button>
+        </div>
+      )}
+    </div>
+
+    <div className="navigation-buttons">
+      {step > 0 && (
+        <button onClick={handleBack} className="nav-btn back">
+          ⬅️ Previous
+        </button>
+      )}
+      {step < questions.length - 1 ? (
+        <button onClick={handleNext} className="nav-btn next">
+          Next Question ➡️
+        </button>
+      ) : (
+        <button
+          onClick={handleSubmit}
+          className="submit-btn"
+          disabled={submitting}
+        >
+          {submitting ? "Saving..." : "Save Profile ✅"}
+        </button>
+      )}
+    </div>
+  </div>
+);
+
+QuestionFlow.propTypes = {
+  step: PropTypes.number.isRequired,
+  questions: PropTypes.arrayOf(PropTypes.object).isRequired,
+  formData: PropTypes.object.isRequired,
+  validationErrors: PropTypes.object.isRequired,
+  handleBack: PropTypes.func.isRequired,
+  handleNext: PropTypes.func.isRequired,
+  handleSubmit: PropTypes.func.isRequired,
+  submitting: PropTypes.bool.isRequired,
+  updateCustomExpense: PropTypes.func.isRequired,
+  removeCustomExpense: PropTypes.func.isRequired,
+  addCustomExpense: PropTypes.func.isRequired,
+  renderQuestionInput: PropTypes.func.isRequired,
 };
 
 export default Profile;

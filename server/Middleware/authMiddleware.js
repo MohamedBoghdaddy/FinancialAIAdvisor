@@ -10,7 +10,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "secure_dev_token";
 /**
  * ✅ Enhanced Authentication Middleware
  * - Supports both Bearer token and cookie-based authentication
- * - Verifies token against database user
+ * - Verifies token against database user (using correct id field)
  * - Detailed logging for debugging
  * - Role-based authorization support
  */
@@ -32,14 +32,29 @@ export const auth = async (req, res, next) => {
     const decoded = jwt.verify(token, JWT_SECRET);
     console.log("Decoded token payload:", decoded);
 
-    // Verify user exists in database with this token
-    const user = await User.findOne({
-      _id: decoded._id,
-      "tokens.token": token,
-    }).select("-password");
+    // Determine user ID from token payload
+    const userId = decoded.id || decoded._id;
+    if (!userId) {
+      console.error("Token payload missing user ID");
+      return res.status(401).json({
+        success: false,
+        message: "Invalid token payload",
+      });
+    }
+
+    // Build user query
+    const userQuery = { _id: userId };
+
+    // Check if tokens array exists in schema, add token check if yes
+    if (User.schema.path("tokens")) {
+      userQuery["tokens.token"] = token;
+    }
+
+    // Find user by ID (and token if applicable)
+    const user = await User.findOne(userQuery).select("-password");
 
     if (!user) {
-      console.log("User not found for token");
+      console.log("User not found for token", { userId, token });
       return res.status(401).json({
         success: false,
         message: "User not found",
