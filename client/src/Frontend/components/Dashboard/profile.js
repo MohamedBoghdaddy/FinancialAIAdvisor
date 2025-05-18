@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext, useCallback } from "react";
 import { useAuthContext } from "../../../context/AuthContext";
 import { DashboardContext } from "../../../context/DashboardContext";
 import { BsPersonCircle } from "react-icons/bs";
@@ -117,11 +117,10 @@ const questions = [
 const Profile = () => {
   const { state: authState } = useAuthContext();
   const { user } = authState || {};
-
   const {
-   state: dashState = {},
-    actions: { submitProfile } = {},
-    loading = false,
+    state: dashState = {},
+    actions: { submitProfile, fetchProfile } = {},
+    loading: contextLoading = false,
     aiAdvice = null,
     goalPlan = null,
   } = useContext(DashboardContext);
@@ -130,24 +129,51 @@ const Profile = () => {
   const [step, setStep] = useState(0);
   const [editMode, setEditMode] = useState(true);
   const [validationErrors, setValidationErrors] = useState({});
+  const [localLoading, setLocalLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
+  // Enhanced data loading with cleanup
   useEffect(() => {
-    if (user?.token && dashState?.profile) {
-      setFormData(dashState.profile.answers || {});
-      setEditMode(false);
-    }
-  }, [user, dashState.profile]);
+    let isMounted = true;
 
-  const validateField = (id, value) => {
+    const loadProfileData = async () => {
+      try {
+        if (user?.token) {
+          await fetchProfile();
+          if (isMounted) {
+            setFormData(dashState.profile?.answers || {});
+            setEditMode(false);
+          }
+        }
+      } catch (err) {
+        console.error("Profile load error:", err);
+        toast.error("Failed to load profile data");
+      } finally {
+        if (isMounted) setLocalLoading(false);
+      }
+    };
+
+    loadProfileData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user, dashState.profile, fetchProfile]);
+
+  // Memoized field validation
+  const validateField = useCallback((id, value) => {
     const question = questions.find((q) => q.id === id);
-    if (!question) return true;
+    if (!question) return "";
 
     if (question.type === "number") {
       if (value === "") return "This field is required";
-      if (question.min !== undefined && Number(value) < question.min)
+      const numValue = Number(value);
+      if (question.min !== undefined && numValue < question.min) {
         return `Minimum value is ${question.min}`;
-      if (question.max !== undefined && Number(value) > question.max)
+      }
+      if (question.max !== undefined && numValue > question.max) {
         return `Maximum value is ${question.max}`;
+      }
     }
 
     if (question.type === "select" && !value) {
@@ -155,15 +181,40 @@ const Profile = () => {
     }
 
     return "";
-  };
+  }, []);
 
-  const handleChange = (id, value) => {
-    const error = validateField(id, value);
-    setValidationErrors((prev) => ({ ...prev, [id]: error }));
-    setFormData((prev) => ({ ...prev, [id]: value }));
-  };
+  // Optimized change handler
+  const handleChange = useCallback(
+    (id, value) => {
+      const error = validateField(id, value);
+      setValidationErrors((prev) => ({ ...prev, [id]: error }));
+      setFormData((prev) => ({ ...prev, [id]: value }));
+    },
+    [validateField]
+  );
 
-  const handleNext = () => {
+  // Navigation handlers
+  const handleNext = useCallback(() => {
+    const currentQuestion = questions[step];
+    const error = validateField(
+      currentQuestion.id,
+      formData[currentQuestion.id]
+    );
+
+    if (error) {
+      setValidationErrors((prev) => ({ ...prev, [currentQuestion.id]: error }));
+      toast.error(`Please complete the current question: ${error}`);
+      return;
+    }
+    setStep((prev) => Math.min(prev + 1, questions.length - 1));
+  }, [step, formData, validateField]);
+
+  const handleBack = useCallback(() => {
+    setStep((prev) => Math.max(prev - 1, 0));
+  }, []);
+
+  // Enhanced submit handler
+  const handleSubmit = useCallback(async () => {
     const currentQuestion = questions[step];
     const error = validateField(
       currentQuestion.id,
@@ -176,34 +227,27 @@ const Profile = () => {
       return;
     }
 
-    if (step < questions.length - 1) setStep(step + 1);
-  };
-
-  const handleBack = () => {
-    if (step > 0) setStep(step - 1);
-  };
-
-  const handleSubmit = async () => {
-    const currentQuestion = questions[step];
-    const error = validateField(
-      currentQuestion.id,
-      formData[currentQuestion.id]
-    );
-
-    if (error) {
-      setValidationErrors((prev) => ({ ...prev, [currentQuestion.id]: error }));
-      toast.error(`Please complete the current question: ${error}`);
-      return;
-    }
-
+    setSubmitting(true);
     try {
-      await submitProfile(formData);
+      await submitProfile({
+        ...formData,
+        customExpenses:
+          formData.customExpenses
+            ?.map((expense) => ({
+              name: expense.name.trim(),
+              amount: Number(expense.amount) || 0,
+            }))
+            .filter((expense) => expense.name) || [],
+      });
       setEditMode(false);
       toast.success("Profile saved successfully!");
     } catch (error) {
-      toast.error("Failed to save profile. Please try again.");
+      console.error("Profile save error:", error);
+      toast.error(error.response?.data?.message || "Failed to save profile");
+    } finally {
+      setSubmitting(false);
     }
-  };
+  }, [step, formData, validateField, submitProfile]);
 
   const handleEditAll = () => {
     setEditMode(true);
@@ -215,7 +259,8 @@ const Profile = () => {
     setStep(index);
   };
 
-  const addCustomExpense = () => {
+  // Expense management
+  const addCustomExpense = useCallback(() => {
     setFormData((prev) => ({
       ...prev,
       customExpenses: [
@@ -223,19 +268,22 @@ const Profile = () => {
         { name: "", amount: "" },
       ],
     }));
-  };
+  }, []);
 
-  const removeCustomExpense = (index) => {
-    const updated = [...(formData.customExpenses || [])];
-    updated.splice(index, 1);
-    setFormData((prev) => ({ ...prev, customExpenses: updated }));
-  };
+  const removeCustomExpense = useCallback((index) => {
+    setFormData((prev) => ({
+      ...prev,
+      customExpenses: (prev.customExpenses || []).filter((_, i) => i !== index),
+    }));
+  }, []);
 
-  const updateCustomExpense = (index, key, value) => {
-    const updated = [...(formData.customExpenses || [])];
-    updated[index][key] = value;
-    setFormData((prev) => ({ ...prev, customExpenses: updated }));
-  };
+  const updateCustomExpense = useCallback((index, key, value) => {
+    setFormData((prev) => {
+      const updated = [...(prev.customExpenses || [])];
+      updated[index] = { ...updated[index], [key]: value };
+      return { ...prev, customExpenses: updated };
+    });
+  }, []);
 
   const renderQuestionInput = (question) => {
     const value = formData[question.id] ?? "";
@@ -314,18 +362,24 @@ const Profile = () => {
     }
   };
 
+  if (localLoading || contextLoading) {
+    return (
+      <div className="profile-container">
+        <div className="loader-container">
+          <div className="loader"></div>
+          <p>Loading your profile...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="profile-container">
       <h2>📋 My Financial Profile</h2>
       <div className="profile-card">
         <BsPersonCircle className="profile-icon" />
 
-        {loading ? (
-          <div className="loader-container">
-            <div className="loader"></div>
-            <p>Loading your profile...</p>
-          </div>
-        ) : dashState.profile?.answers && !editMode ? (
+        {dashState.profile?.answers && !editMode ? (
           <div className="submitted-results">
             <h3>📌 Your Responses</h3>
             <div className="profile-summary">
@@ -450,9 +504,9 @@ const Profile = () => {
                 <button
                   onClick={handleSubmit}
                   className="submit-btn"
-                  disabled={loading}
+                  disabled={submitting}
                 >
-                  {loading ? "Saving..." : "Save Profile ✅"}
+                  {submitting ? "Saving..." : "Save Profile ✅"}
                 </button>
               )}
             </div>

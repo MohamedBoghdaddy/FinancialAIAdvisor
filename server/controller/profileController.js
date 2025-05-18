@@ -35,42 +35,59 @@ export const profileValidationRules = [
 ];
 
 /**
- * Get latest user profile with custom expenses
+ * Get latest user profile with custom expenses and debugging
  */
 export const getLatestProfile = async (req, res) => {
+  console.log('Received headers:', req.headers); // Debug log
+  console.log('Authenticated user:', req.user); // Debug log
+
   try {
     const profile = await Profile.findOne({ userId: req.user._id })
       .sort({ createdAt: -1 })
       .lean()
-      .select("+totalMonthlyExpenses"); // Include virtual field
+      .select('+totalMonthlyExpenses'); // Include virtual field
+
+    console.log('Found profile:', profile); // Debug log
 
     if (!profile) {
+      console.log('No profile found for user:', req.user._id);
       return res.status(404).json({
         success: false,
         message: "Profile not found",
       });
     }
 
-    // Calculate total expenses if not already included
-    profile.totalMonthlyExpenses =
-      profile.customExpenses?.reduce(
-        (total, expense) => total + (expense.amount || 0),
-        0
-      ) || 0;
+    // Calculate total expenses (both as virtual field and manual calculation)
+    profile.totalMonthlyExpenses = profile.customExpenses?.reduce(
+      (total, expense) => total + (expense.amount || 0), 
+      0
+    ) || 0;
+
+    console.log('Profile with expenses calculated:', { 
+      totalMonthlyExpenses: profile.totalMonthlyExpenses,
+      customExpensesCount: profile.customExpenses?.length || 0
+    }); // Debug log
 
     res.status(200).json({
       success: true,
       data: profile,
     });
   } catch (error) {
-    console.error("[Profile Controller] Get error:", error);
+    console.error("Profile fetch error:", {
+      message: error.message,
+      stack: error.stack,
+      userId: req.user?._id
+    });
+
     res.status(500).json({
       success: false,
       message: "Internal server error",
+      ...(process.env.NODE_ENV === 'development' && { 
+        error: error.message 
+      })
     });
   }
 };
-
 /**
  * Enhanced create/update profile with custom expenses handling
  */

@@ -1,7 +1,6 @@
-// ... all your existing imports
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs"; // bcryptjs preferred for ease of use
 import multer from "multer";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -9,13 +8,13 @@ import { dirname } from "path";
 import User from "../models/UserModel.js";
 
 dotenv.config();
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_here";
 
-// __dirname resolution
+// __dirname resolution for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Multer config
+// Multer config for profile photo uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, path.join(__dirname, "../uploads"));
@@ -26,7 +25,7 @@ const storage = multer.diskStorage({
 });
 export const upload = multer({ storage });
 
-// JWT Token creation
+// JWT Token creation helper
 const createToken = (user) =>
   jwt.sign(
     { id: user._id, role: user.role, username: user.username },
@@ -81,48 +80,62 @@ export const registerUser = async (req, res) => {
 export const loginUser = async (req, res) => {
   const { email, password } = req.body;
   try {
-    // Select password explicitly for login
+    console.log("Login attempt:", email);
+
+    // Find user and include password explicitly
     const user = await User.findOne({ email }).select("+password");
-    if (!user) return res.status(401).json({ message: "Invalid credentials" });
+    console.log("User found:", user ? user.email : "No user");
+
+    if (!user) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
 
     if (user.blocked) {
-      return res
-        .status(403)
-        .json({ message: "Your account has been blocked by the admin." });
+      return res.status(403).json({ message: "Your account has been blocked" });
     }
 
     if (!user.password) {
-      // Very rare case, password missing in DB
       return res
         .status(500)
-        .json({ message: "Password not set for this user." });
+        .json({ message: "Password not set for this user" });
     }
 
+    // Compare password
     const isMatch = await bcrypt.compare(password, user.password);
+    console.log("Password match:", isMatch);
+
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
+    // Generate JWT
     const token = createToken(user);
+
+    // Set JWT cookie
     res.cookie("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     });
 
+    // Return user info and token
     res.status(200).json({
       token,
-      user: { id: user._id, username: user.username, email, role: user.role },
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+      },
     });
   } catch (error) {
-    console.error("Login Error:", error);
+    console.error("Login error:", error);
     res.status(500).json({ message: "Login failed", error: error.message });
   }
 };
 
-
-
-// LOGOUT
+// LOGOUT USER
 export const logoutUser = async (req, res) => {
   try {
     res.clearCookie("token", {
@@ -136,7 +149,7 @@ export const logoutUser = async (req, res) => {
   }
 };
 
-// GET USERS
+// GET ALL USERS (without passwords)
 export const getAllUsers = async (req, res) => {
   try {
     const users = await User.find().select("-password");
@@ -146,6 +159,7 @@ export const getAllUsers = async (req, res) => {
   }
 };
 
+// GET USER BY ID (without password)
 export const getUserById = async (req, res) => {
   try {
     const user = await User.findById(req.params.userId).select("-password");
@@ -156,7 +170,7 @@ export const getUserById = async (req, res) => {
   }
 };
 
-// CHECK AUTH
+// CHECK AUTHENTICATION
 export const checkAuth = async (req, res) => {
   try {
     const token = req.cookies.token;
@@ -172,7 +186,7 @@ export const checkAuth = async (req, res) => {
   }
 };
 
-// UPDATE PROFILE
+// UPDATE USER PROFILE (including optional profile photo upload)
 export const updateUserProfile = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -191,7 +205,7 @@ export const updateUserProfile = async (req, res) => {
   }
 };
 
-// DELETE
+// DELETE USER
 export const deleteUser = async (req, res) => {
   try {
     const user = await User.findByIdAndDelete(req.params.userId);
@@ -203,7 +217,7 @@ export const deleteUser = async (req, res) => {
   }
 };
 
-// BLOCK / UNBLOCK
+// TOGGLE BLOCK / UNBLOCK USER
 export const toggleBlockStatus = async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
@@ -218,7 +232,7 @@ export const toggleBlockStatus = async (req, res) => {
   }
 };
 
-// LOGIN META UPDATE
+// UPDATE LOGIN METADATA (last login timestamp, IP, activity log)
 export const updateLoginMeta = async (req, res) => {
   const { email } = req.body;
   const ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
@@ -241,7 +255,7 @@ export const updateLoginMeta = async (req, res) => {
   }
 };
 
-// ✅ FIXED: ADD this missing export
+// UPDATE USER ROLE OR PASSWORD
 export const updateUserRoleOrPassword = async (req, res) => {
   const { id } = req.params;
   const { newRole, newPassword } = req.body;
@@ -260,7 +274,7 @@ export const updateUserRoleOrPassword = async (req, res) => {
   }
 };
 
-// OPTIONAL: Separate role update only
+// UPDATE USER ROLE ONLY (optional)
 export const updateUserRole = async (req, res) => {
   const { id } = req.params;
   const { newRole } = req.body;
