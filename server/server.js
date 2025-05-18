@@ -14,7 +14,7 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 
 // 🌍 Route Imports
-import userRoutes from "./routes/userRoutes.js";
+import userRoutes from "./routes/userroutes.js";
 import chatRoutes from "./routes/chatRoutes.js";
 import questionnaireRoutes from "./routes/questionnaireRoutes.js";
 import analyticsRoutes from "./routes/analyticRoutes.js";

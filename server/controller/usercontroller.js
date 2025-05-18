@@ -81,16 +81,27 @@ export const registerUser = async (req, res) => {
 export const loginUser = async (req, res) => {
   const { email, password } = req.body;
   try {
-    const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ message: "User not found" });
-    if (user.blocked)
+    // Select password explicitly for login
+    const user = await User.findOne({ email }).select("+password");
+    if (!user) return res.status(401).json({ message: "Invalid credentials" });
+
+    if (user.blocked) {
       return res
         .status(403)
         .json({ message: "Your account has been blocked by the admin." });
+    }
+
+    if (!user.password) {
+      // Very rare case, password missing in DB
+      return res
+        .status(500)
+        .json({ message: "Password not set for this user." });
+    }
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch)
+    if (!isMatch) {
       return res.status(401).json({ message: "Invalid credentials" });
+    }
 
     const token = createToken(user);
     res.cookie("token", token, {
@@ -105,9 +116,11 @@ export const loginUser = async (req, res) => {
     });
   } catch (error) {
     console.error("Login Error:", error);
-    res.status(500).json({ message: "Login failed", error });
+    res.status(500).json({ message: "Login failed", error: error.message });
   }
 };
+
+
 
 // LOGOUT
 export const logoutUser = async (req, res) => {

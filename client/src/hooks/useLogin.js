@@ -1,13 +1,14 @@
 import { useState, useCallback } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
 import { useAuthContext } from "../context/AuthContext";
 
-const apiUrl = process.env.REACT_APP_API_URL;
-const localUrl = "http://localhost:4000";
+const API_URL =
+  process.env.REACT_APP_API_URL ??
+  (window.location.hostname === "localhost"
+    ? "http://localhost:4000"
+    : "https://financial-ai-backend-kr2s.onrender.com");
 
 export const useLogin = () => {
-  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -23,50 +24,44 @@ export const useLogin = () => {
       setErrorMessage("");
       setSuccessMessage("");
 
-      // ✅ Check for admin credentials before any API call
-      if (email === "ahmedaref@gmail.com" && password === "12345678") {
-        localStorage.setItem("admin_logged_in", true);
-        localStorage.setItem("token", "admin_token");
-        localStorage.setItem("user", JSON.stringify({ role: "admin", username: "Ahmed Aref", email }));
-      
-        dispatch({
-          type: "LOGIN_SUCCESS",
-          payload: { role: "admin", username: "Ahmed Aref", email },
-        });
-      
-        navigate("/admin/dashboard");
-        return;
-      }
-
       try {
         const response = await axios.post(
-          `${process.env.NODE_ENV === "production" ? apiUrl : localUrl}/api/users/login`,
+          `${API_URL}/api/users/login`,
           { email, password },
-          { withCredentials: true }
+          {
+            withCredentials: true, // ✅ Allows backend to set cookies
+            headers: { "Content-Type": "application/json" },
+          }
         );
 
         const { token, user } = response.data;
 
         if (token && user) {
+          // ✅ Store token & user in localStorage
           localStorage.setItem("token", token);
-          localStorage.setItem("user", JSON.stringify({ token, user }));
+          localStorage.setItem("user", JSON.stringify(user));
+
+          // ✅ Set Authorization header globally
           axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
+          // ✅ Dispatch login success
           dispatch({ type: "LOGIN_SUCCESS", payload: user });
+
           setSuccessMessage("Login successful");
-          navigate("/");
         } else {
-          console.error("Unexpected response format:", response.data);
-          throw new Error("Invalid response data");
+          throw new Error("Unexpected response format");
         }
       } catch (error) {
         console.error("Login error:", error);
-        setErrorMessage(error.response?.data?.message || "Login failed");
+        setErrorMessage(
+          error.response?.data?.message || "Login failed. Please try again."
+        );
         dispatch({ type: "AUTH_ERROR" });
       } finally {
         setIsLoading(false);
       }
     },
-    [email, password, dispatch, navigate]
+    [email, password, dispatch]
   );
 
   return {

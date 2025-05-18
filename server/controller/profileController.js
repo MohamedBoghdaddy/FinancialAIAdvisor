@@ -1,9 +1,8 @@
-// controllers/profileController.js
 import { body, validationResult } from "express-validator";
 import Profile from "../models/ProfileModel.js";
 import User from "../models/UserModel.js";
 
-// Validation rules that can be reused
+// Enhanced validation rules
 export const profileValidationRules = [
   body("age")
     .optional()
@@ -11,19 +10,39 @@ export const profileValidationRules = [
     .withMessage("Age must be between 18 and 120"),
   body("employmentStatus")
     .optional()
-    .isIn(["Employed", "Self-employed", "Unemployed", "Student", "Retired"]),
-  body("salary").optional().isNumeric(),
-  body("financialGoals").optional().isString().trim().escape(),
+    .isIn(["Employed", "Self-employed", "Unemployed", "Student", "Retired"])
+    .withMessage("Invalid employment status"),
+  body("salary").optional().isNumeric().withMessage("Salary must be a number"),
+  body("financialGoals")
+    .optional()
+    .isString()
+    .trim()
+    .escape()
+    .isLength({ max: 500 })
+    .withMessage("Financial goals cannot exceed 500 characters"),
+  body("customExpenses.*.name")
+    .optional()
+    .isString()
+    .trim()
+    .isLength({ max: 50 })
+    .withMessage("Expense name cannot exceed 50 characters"),
+  body("customExpenses.*.amount")
+    .optional()
+    .isNumeric()
+    .withMessage("Expense amount must be a number")
+    .custom((value) => value >= 0)
+    .withMessage("Expense amount cannot be negative"),
 ];
 
 /**
- * Get latest user profile
+ * Get latest user profile with custom expenses
  */
 export const getLatestProfile = async (req, res) => {
   try {
     const profile = await Profile.findOne({ userId: req.user._id })
       .sort({ createdAt: -1 })
-      .lean(); // Convert to plain JS object
+      .lean()
+      .select("+totalMonthlyExpenses"); // Include virtual field
 
     if (!profile) {
       return res.status(404).json({
@@ -31,6 +50,13 @@ export const getLatestProfile = async (req, res) => {
         message: "Profile not found",
       });
     }
+
+    // Calculate total expenses if not already included
+    profile.totalMonthlyExpenses =
+      profile.customExpenses?.reduce(
+        (total, expense) => total + (expense.amount || 0),
+        0
+      ) || 0;
 
     res.status(200).json({
       success: true,
@@ -46,7 +72,7 @@ export const getLatestProfile = async (req, res) => {
 };
 
 /**
- * Create or update profile with validation
+ * Enhanced create/update profile with custom expenses handling
  */
 export const createOrUpdateProfile = async (req, res) => {
   // Validate input
@@ -60,7 +86,17 @@ export const createOrUpdateProfile = async (req, res) => {
 
   try {
     const { _id: userId } = req.user;
-    const updateData = req.body;
+    let updateData = req.body;
+
+    // Process custom expenses
+    if (updateData.customExpenses) {
+      updateData.customExpenses = updateData.customExpenses
+        .map((expense) => ({
+          name: expense.name.trim(),
+          amount: Number(expense.amount),
+        }))
+        .filter((expense) => expense.name && !isNaN(expense.amount));
+    }
 
     // Add audit fields
     updateData.lastUpdated = new Date();
@@ -70,6 +106,7 @@ export const createOrUpdateProfile = async (req, res) => {
       new: true,
       upsert: true,
       runValidators: true,
+      setDefaultsOnInsert: true,
     };
 
     const profile = await Profile.findOneAndUpdate(
@@ -78,21 +115,28 @@ export const createOrUpdateProfile = async (req, res) => {
       options
     );
 
+    // Calculate total expenses for response
+    const responseData = profile.toObject();
+    responseData.totalMonthlyExpenses =
+      responseData.customExpenses?.reduce(
+        (total, expense) => total + (expense.amount || 0),
+        0
+      ) || 0;
+
     res.status(200).json({
       success: true,
       message: profile.isNew ? "Profile created" : "Profile updated",
-      data: profile,
+      data: responseData,
     });
   } catch (error) {
     console.error("[Profile Controller] Save error:", error);
 
-    // Handle different error types
     let status = 500;
     let message = "Internal server error";
 
     if (error.name === "ValidationError") {
       status = 400;
-      message = "Validation failed";
+      message = "Validation failed: " + error.message;
     } else if (error.code === 11000) {
       status = 409;
       message = "Duplicate key error";
@@ -107,7 +151,7 @@ export const createOrUpdateProfile = async (req, res) => {
 };
 
 /**
- * Delete profile
+ * Delete profile with confirmation
  */
 export const deleteProfile = async (req, res) => {
   try {
@@ -116,7 +160,7 @@ export const deleteProfile = async (req, res) => {
     if (deletedCount === 0) {
       return res.status(404).json({
         success: false,
-        message: "Profile not found",
+        message: "Profile not found or already deleted",
       });
     }
 
@@ -133,16 +177,25 @@ export const deleteProfile = async (req, res) => {
   }
 };
 
-// Add this to your profileController.js
 /**
- * Get all profiles (admin only)
+ * Get all profiles (admin only) with filtering
  */
 export const getAllProfiles = async (req, res) => {
   try {
-    const profiles = await Profile.find().lean();
+    const { page = 1, limit = 10 } = req.query;
+    const profiles = await Profile.find()
+      .lean()
+      .limit(limit * 1)
+      .skip((page - 1) * limit)
+      .select("+totalMonthlyExpenses");
+
+    const count = await Profile.countDocuments();
+
     res.status(200).json({
       success: true,
       data: profiles,
+      totalPages: Math.ceil(count / limit),
+      currentPage: page,
     });
   } catch (error) {
     console.error("[Profile Controller] Get all error:", error);
@@ -153,25 +206,31 @@ export const getAllProfiles = async (req, res) => {
   }
 };
 
-
-
-// Add this to profileController.js
 /**
- * Get profile by ID (admin or user's own profile)
+ * Get profile by ID with enhanced security
  */
 export const getProfileById = async (req, res) => {
   try {
     const { id } = req.params;
-    const profile = await Profile.findOne({ 
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid profile ID format",
+      });
+    }
+
+    const profile = await Profile.findOne({
       _id: id,
-      // Optional: Restrict to user's own profile unless admin
-      ...(req.user.role !== 'admin' ? { userId: req.user._id } : {})
-    }).lean();
+      ...(req.user.role !== "admin" ? { userId: req.user._id } : {}),
+    })
+      .lean()
+      .select("+totalMonthlyExpenses");
 
     if (!profile) {
       return res.status(404).json({
         success: false,
-        message: "Profile not found",
+        message: "Profile not found or unauthorized access",
       });
     }
 
