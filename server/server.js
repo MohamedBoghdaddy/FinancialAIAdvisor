@@ -16,9 +16,7 @@ import rateLimit from "express-rate-limit";
 // 🌍 Route Imports
 import userRoutes from "./routes/userroutes.js";
 import chatRoutes from "./routes/chatRoutes.js";
-import questionnaireRoutes from "./routes/questionnaireRoutes.js";
 import analyticsRoutes from "./routes/analyticRoutes.js";
-import lifeManagement from "./routes/lifeManagement.js";
 import profileRoutes from "./routes/profileRoutes.js"; // Fixed import
 
 // 📁 Path & Env Setup
@@ -121,9 +119,7 @@ app.use(
 // 🧩 API Routes
 app.use("/api/users", userRoutes);
 app.use("/api/chat", apiLimiter, chatRoutes);
-app.use("/api/questionnaire", questionnaireRoutes);
 app.use("/api/analytics", analyticsRoutes);
-app.use("/api/lifemanagement", lifeManagement);
 app.use("/api/profile", profileRoutes); // Using the router
 
 // 🔄 FastAPI Proxy Configuration
