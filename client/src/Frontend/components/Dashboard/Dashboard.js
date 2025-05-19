@@ -1,6 +1,11 @@
 import React, { useState } from "react";
-import { Container, Row, Col, Tab } from "react-bootstrap";
+import { Container, Row, Col, Tab, Card, Button } from "react-bootstrap";
 import { useAuthContext } from "../../../context/AuthContext";
+
+import Chat from "../Features/Chat";
+import Questionnaire from "../Features/Questionnaire";
+import CurrencyConverter from "./CurrencyConverter";
+
 import "../styles/dashboard.css";
 import DashboardHeader from "./DashboardHeader";
 import DashboardSidebar from "./DashboardSidebar";
@@ -20,7 +25,6 @@ const Dashboard = () => {
   const handleGetAiAdvice = async () => {
     setIsLoading(true);
     try {
-      // Simulated API call
       const response = await new Promise((resolve) =>
         setTimeout(
           () =>
@@ -75,7 +79,112 @@ const Dashboard = () => {
                   <InvestmentsTab investments={dashboardData.investments} />
                 </Tab.Pane>
 
-                {/* Add other tabs as needed */}
+                <Tab.Pane eventKey="transactions">
+                  <h2 className="tab-title">Transaction History</h2>
+                  <Card className="dashboard-card">
+                    <Card.Body>
+                      <div className="transaction-list">
+                        {dashboardData.recentTransactions.map((transaction) => (
+                          <div
+                            key={transaction.id}
+                            className="transaction-item"
+                          >
+                            <div className="transaction-info">
+                              <div className="transaction-date">
+                                {transaction.date}
+                              </div>
+                              <div className="transaction-description">
+                                {transaction.description}
+                                <span className="transaction-category">
+                                  {transaction.category}
+                                </span>
+                              </div>
+                            </div>
+                            <div
+                              className={`transaction-amount ${
+                                transaction.amount > 0 ? "positive" : "negative"
+                              }`}
+                            >
+                              {transaction.amount > 0 ? "+" : ""}
+                              {transaction.amount.toLocaleString("en-US", {
+                                style: "currency",
+                                currency: "USD",
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </Card.Body>
+                  </Card>
+                </Tab.Pane>
+
+                <Tab.Pane eventKey="goals">
+                  <h2 className="tab-title">Financial Goals</h2>
+                  <p>
+                    This section will display your financial goals and progress.
+                  </p>
+                </Tab.Pane>
+
+                <Tab.Pane eventKey="advice">
+                  <h2 className="tab-title">AI Financial Advice</h2>
+                  <Row>
+                    <Col lg={6} className="mb-4">
+                      <Card className="dashboard-card">
+                        <Card.Body>
+                          <h5>Get Personalized Financial Advice</h5>
+                          <p className="mb-4">
+                            Our AI analyzes your financial data and provides
+                            personalized recommendations to help you achieve
+                            your financial goals.
+                          </p>
+                          <Button
+                            variant="primary"
+                            onClick={handleGetAiAdvice}
+                            disabled={isLoading}
+                          >
+                            {isLoading
+                              ? "Generating Advice..."
+                              : "Get AI Advice"}
+                          </Button>
+                        </Card.Body>
+                      </Card>
+                    </Col>
+                    <Col lg={6} className="mb-4">
+                      <Card className="dashboard-card">
+                        <Card.Body>
+                          <h5>Financial Questionnaire</h5>
+                          <p className="mb-4">
+                            Complete our questionnaire to help us better
+                            understand your financial situation and goals.
+                          </p>
+                          <Button
+                            variant="outline-primary"
+                            onClick={() => setActiveTab("questionnaire")}
+                          >
+                            Take Questionnaire
+                          </Button>
+                        </Card.Body>
+                      </Card>
+                    </Col>
+                  </Row>
+                </Tab.Pane>
+
+                <Tab.Pane eventKey="chat">
+                  <h2 className="tab-title">AI Financial Advisor Chat</h2>
+                  <Chat />
+                </Tab.Pane>
+
+                <Tab.Pane eventKey="questionnaire">
+                  <h2 className="tab-title">Financial Questionnaire</h2>
+                  <Questionnaire />
+                </Tab.Pane>
+
+                <Tab.Pane eventKey="settings">
+                  <h2 className="tab-title">Account Settings</h2>
+                  <p>
+                    This section will allow you to manage your account settings.
+                  </p>
+                </Tab.Pane>
               </Tab.Content>
             </Col>
           </Row>

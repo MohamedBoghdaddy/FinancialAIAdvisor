@@ -189,6 +189,11 @@ const Sidebar = () => {
             <FaChartLine /> Statistics
           </Link>
         </li>
+        <li>
+  <Link to="/currency-converter">
+    <FaChartLine /> Currency Converter
+  </Link>
+</li>
       </ul>
     </div>
   );

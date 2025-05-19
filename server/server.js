@@ -18,7 +18,7 @@ import userRoutes from "./routes/userroutes.js";
 import chatRoutes from "./routes/chatRoutes.js";
 import analyticsRoutes from "./routes/analyticRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js"; // Fixed import
-
+import currencyRoutes from "./routes/currency.js"; // 👈 Add this line
 // 📁 Path & Env Setup
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -121,6 +121,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/chat", apiLimiter, chatRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/profile", profileRoutes); // Using the router
+app.use("/api/currency", currencyRoutes);
 
 // 🔄 FastAPI Proxy Configuration
 const forwardRequest = async (req, res, endpoint) => {
