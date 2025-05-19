@@ -19,8 +19,6 @@ import Settings from "./Frontend/components/Dashboard/settings";
 import Profile from "./Frontend/components/Dashboard/profile";
 import AIChat from "./Frontend/components/chatbot/AIChat";
 import Contact from "./Frontend/components/Contact/contact";
-import LifeManagement from "./Frontend/components/Dashboard/lifemanagement";
-import StatisticsPage from "./Frontend/components/Dashboard/Statistics.js";
 import AdminDashboard from "./Frontend/components/Dashboard/AdminDashboard";
 import UserDetails from "./Frontend/components/Dashboard/UserDetails";
 import ProtectedRoute from "./Frontend/components/Auth/ProtectedRoute";
@@ -158,32 +156,8 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/LifeManagement"
-            element={
-              <ProtectedRoute>
-                <>
-                  <MiniNavbar />
-                  <Sidebar />
-                  <LifeManagement />
-                  <Footer />
-                </>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/statistics"
-            element={
-              <ProtectedRoute>
-                <>
-                  <MiniNavbar />
-                  <Sidebar />
-                  <StatisticsPage />
-                  <Footer />
-                </>
-              </ProtectedRoute>
-            }
-          />
+         
+          
 
           {/* AI Report Page */}
           <Route path="/financial-report" element={<FinancialReportPage />} />

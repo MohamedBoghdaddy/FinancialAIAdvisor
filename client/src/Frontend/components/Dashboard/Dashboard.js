@@ -13,8 +13,6 @@ import { useAuthContext } from "../../../context/AuthContext";
 import "../styles/dashboard.css";
 import Chat from "../Features/Chat";
 import Questionnaire from "../Features/Questionnaire";
-import LifeManagement from "../Features/LifeManagement";
-import StatisticsChart from "./Statistics";
 
 const Dashboard = () => {
   const { state } = useAuthContext();
@@ -396,10 +394,6 @@ const Dashboard = () => {
                   </Row>
                 </Tab.Pane>
 
-                <Tab.Pane eventKey="statistics">
-                  <StatisticsChart />
-                </Tab.Pane>
-
                 <Tab.Pane eventKey="transactions">
                   <h2 className="tab-title">Transaction History</h2>
                   <Card className="dashboard-card">
@@ -500,10 +494,7 @@ const Dashboard = () => {
                   <Questionnaire />
                 </Tab.Pane>
 
-                <Tab.Pane eventKey="life-goals">
-                  <h2 className="tab-title">Life Goals Management</h2>
-                  <LifeManagement />
-                </Tab.Pane>
+               
 
                 <Tab.Pane eventKey="settings">
                   <h2 className="tab-title">Account Settings</h2>
