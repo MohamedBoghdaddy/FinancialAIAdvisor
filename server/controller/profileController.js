@@ -1,8 +1,11 @@
 import { body, validationResult } from "express-validator";
+import mongoose from "mongoose";
 import Profile from "../models/ProfileModel.js";
 import User from "../models/UserModel.js";
 
-// Enhanced validation rules
+/**
+ * Validation rules for creating/updating profile
+ */
 export const profileValidationRules = [
   body("age")
     .optional()
@@ -35,38 +38,48 @@ export const profileValidationRules = [
 ];
 
 /**
- * Get latest user profile with custom expenses and debugging
+ * Helper: Log messages only in development
+ */
+const devLog = (...args) => {
+  if (process.env.NODE_ENV === "development") {
+    console.log(...args);
+  }
+};
+
+/**
+ * Get latest profile for authenticated user
  */
 export const getLatestProfile = async (req, res) => {
-  console.log('Received headers:', req.headers); // Debug log
-  console.log('Authenticated user:', req.user); // Debug log
+  devLog("Received headers:", req.headers);
+  devLog("Authenticated user:", req.user);
 
   try {
     const profile = await Profile.findOne({ userId: req.user._id })
       .sort({ createdAt: -1 })
       .lean()
-      .select('+totalMonthlyExpenses'); // Include virtual field
+      .select("+totalMonthlyExpenses"); // Include virtual if exists
 
-    console.log('Found profile:', profile); // Debug log
+    devLog("Found profile:", profile);
 
     if (!profile) {
-      console.log('No profile found for user:', req.user._id);
+      devLog("No profile found for user:", req.user._id);
       return res.status(404).json({
         success: false,
         message: "Profile not found",
       });
     }
 
-    // Calculate total expenses (both as virtual field and manual calculation)
-    profile.totalMonthlyExpenses = profile.customExpenses?.reduce(
-      (total, expense) => total + (expense.amount || 0), 
-      0
-    ) || 0;
+    // Manual total expenses calculation as fallback or for accuracy
+    profile.totalMonthlyExpenses =
+      profile.customExpenses?.reduce(
+        (total, expense) => total + (expense.amount || 0),
+        0
+      ) || 0;
 
-    console.log('Profile with expenses calculated:', { 
+    devLog("Profile with expenses calculated:", {
       totalMonthlyExpenses: profile.totalMonthlyExpenses,
-      customExpensesCount: profile.customExpenses?.length || 0
-    }); // Debug log
+      customExpensesCount: profile.customExpenses?.length || 0,
+    });
 
     res.status(200).json({
       success: true,
@@ -76,23 +89,22 @@ export const getLatestProfile = async (req, res) => {
     console.error("Profile fetch error:", {
       message: error.message,
       stack: error.stack,
-      userId: req.user?._id
+      userId: req.user?._id,
     });
 
     res.status(500).json({
       success: false,
       message: "Internal server error",
-      ...(process.env.NODE_ENV === 'development' && { 
-        error: error.message 
-      })
+      ...(process.env.NODE_ENV === "development" && { error: error.message }),
     });
   }
 };
+
 /**
- * Enhanced create/update profile with custom expenses handling
+ * Create or update profile for authenticated user
  */
 export const createOrUpdateProfile = async (req, res) => {
-  // Validate input
+  // Validate input data
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({
@@ -103,9 +115,9 @@ export const createOrUpdateProfile = async (req, res) => {
 
   try {
     const { _id: userId } = req.user;
-    let updateData = req.body;
+    let updateData = { ...req.body };
 
-    // Process custom expenses
+    // Clean and normalize custom expenses
     if (updateData.customExpenses) {
       updateData.customExpenses = updateData.customExpenses
         .map((expense) => ({
@@ -115,9 +127,12 @@ export const createOrUpdateProfile = async (req, res) => {
         .filter((expense) => expense.name && !isNaN(expense.amount));
     }
 
-    // Add audit fields
+    // Audit fields
     updateData.lastUpdated = new Date();
     updateData.updatedBy = userId;
+
+    // Find if profile exists before update (to detect creation)
+    const existingProfile = await Profile.findOne({ userId });
 
     const options = {
       new: true,
@@ -142,7 +157,7 @@ export const createOrUpdateProfile = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: profile.isNew ? "Profile created" : "Profile updated",
+      message: existingProfile ? "Profile updated" : "Profile created",
       data: responseData,
     });
   } catch (error) {
@@ -168,7 +183,7 @@ export const createOrUpdateProfile = async (req, res) => {
 };
 
 /**
- * Delete profile with confirmation
+ * Delete profile for authenticated user
  */
 export const deleteProfile = async (req, res) => {
   try {
@@ -195,16 +210,20 @@ export const deleteProfile = async (req, res) => {
 };
 
 /**
- * Get all profiles (admin only) with filtering
+ * Get paginated list of all profiles (Admin only)
  */
 export const getAllProfiles = async (req, res) => {
   try {
-    const { page = 1, limit = 10 } = req.query;
+    // Parse pagination query params
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+
     const profiles = await Profile.find()
       .lean()
-      .limit(limit * 1)
+      .limit(limit)
       .skip((page - 1) * limit)
-      .select("+totalMonthlyExpenses");
+      .select("+totalMonthlyExpenses")
+      .sort({ createdAt: -1 }); // newest first
 
     const count = await Profile.countDocuments();
 
@@ -213,6 +232,7 @@ export const getAllProfiles = async (req, res) => {
       data: profiles,
       totalPages: Math.ceil(count / limit),
       currentPage: page,
+      totalProfiles: count,
     });
   } catch (error) {
     console.error("[Profile Controller] Get all error:", error);
@@ -224,7 +244,7 @@ export const getAllProfiles = async (req, res) => {
 };
 
 /**
- * Get profile by ID with enhanced security
+ * Get profile by ID with role-based access
  */
 export const getProfileById = async (req, res) => {
   try {
@@ -237,10 +257,13 @@ export const getProfileById = async (req, res) => {
       });
     }
 
-    const profile = await Profile.findOne({
-      _id: id,
-      ...(req.user.role !== "admin" ? { userId: req.user._id } : {}),
-    })
+    // Admin can get any profile, others only their own
+    const filter = { _id: id };
+    if (req.user.role !== "admin") {
+      filter.userId = req.user._id;
+    }
+
+    const profile = await Profile.findOne(filter)
       .lean()
       .select("+totalMonthlyExpenses");
 
