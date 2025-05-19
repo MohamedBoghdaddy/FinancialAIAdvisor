@@ -3,6 +3,9 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import { AuthProvider } from "./context/AuthContext";
 import FinancialReportPage from "./Frontend/components/Dashboard/FinancialReportPage";
+import CurrencyConverter from "./Frontend/components/Dashboard/CurrencyConverter";
+
+
 
 import Login from "./Frontend/components/LOGIN&REGISTRATION/Login/Login";
 import Signup from "./Frontend/components/LOGIN&REGISTRATION/Signup/Signup";
@@ -11,7 +14,7 @@ import NavBar from "./Frontend/components/Home/Navbar";
 import Footer from "./Frontend/components/Home/Footer";
 import MiniNavbar from "./Frontend/components/Home/Mininavbar";
 import Chatbot from "./Frontend/components/chatbot/chatbot";
-import Questionnaire from "./Frontend/components/Dashboard/Questionnaire";
+import Questionnaire from "./Frontend/components/Dashboard/Questionnaire" ;
 import Dashboard from "./Frontend/components/Dashboard/Dashboard";
 import Sidebar from "./Frontend/components/Dashboard/sidebar";
 import AnalyticsReport from "./Frontend/components/Dashboard/analytics";
@@ -156,7 +159,7 @@ function App() {
               </ProtectedRoute>
             }
           />
-         
+         <Route path="/currency-converter" element={<CurrencyConverter />} />
           
 
           {/* AI Report Page */}
@@ -180,6 +183,7 @@ function App() {
             }
           />
         </Routes>
+        
       </BrowserRouter>
     </AuthProvider>
   );

@@ -10,6 +10,8 @@ import {
   Modal,
 } from "react-bootstrap";
 import { useAuthContext } from "../../../context/AuthContext";
+import CurrencyConverter from "./CurrencyConverter";
+
 import "../styles/dashboard.css";
 import Chat from "../Features/Chat";
 import Questionnaire from "../Features/Questionnaire";
@@ -488,12 +490,13 @@ const Dashboard = () => {
                   <h2 className="tab-title">AI Financial Advisor Chat</h2>
                   <Chat />
                 </Tab.Pane>
+       
 
                 <Tab.Pane eventKey="questionnaire">
                   <h2 className="tab-title">Financial Questionnaire</h2>
                   <Questionnaire />
                 </Tab.Pane>
-
+       
                
 
                 <Tab.Pane eventKey="settings">
