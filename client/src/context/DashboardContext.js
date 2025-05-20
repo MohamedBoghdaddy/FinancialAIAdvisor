@@ -12,7 +12,6 @@ import { toast } from "react-toastify";
 import axios from "axios";
 
 const API_URL = process.env.REACT_APP_API_URL || "http://localhost:4000";
-
 export const DashboardContext = createContext();
 
 const createInitialState = () => ({
@@ -170,7 +169,7 @@ export const DashboardProvider = ({ children }) => {
           signal: controller.signal,
         });
 
-        console.log("✅ Profile fetched:", res.data); // debug
+        console.log("✅ Profile fetched:", res.data);
         dispatch({ type: "FETCH_PROFILE_SUCCESS", payload: res.data.data });
       } catch (err) {
         if (axios.isCancel(err)) return;

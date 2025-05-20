@@ -2,28 +2,31 @@ import React from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import { AuthProvider } from "./context/AuthContext";
-import FinancialReportPage from "./Frontend/components/Dashboard/FinancialReportPage";
-import CurrencyConverter from "./Frontend/components/Dashboard/CurrencyConverter";
 
-
-
-import Login from "./Frontend/components/LOGIN&REGISTRATION/Login/Login";
-import Signup from "./Frontend/components/LOGIN&REGISTRATION/Signup/Signup";
+// Frontend Components
 import Home from "./Frontend/components/Home/home";
 import NavBar from "./Frontend/components/Home/Navbar";
 import Footer from "./Frontend/components/Home/Footer";
 import MiniNavbar from "./Frontend/components/Home/Mininavbar";
-import Chatbot from "./Frontend/components/chatbot/chatbot";
-import Questionnaire from "./Frontend/components/Dashboard/Questionnaire" ;
+
+import Login from "./Frontend/components/LOGIN&REGISTRATION/Login/Login";
+import Signup from "./Frontend/components/LOGIN&REGISTRATION/Signup/Signup";
+
 import Dashboard from "./Frontend/components/Dashboard/Dashboard";
 import Sidebar from "./Frontend/components/Dashboard/sidebar";
-import AnalyticsReport from "./Frontend/components/Dashboard/analytics";
 import Settings from "./Frontend/components/Dashboard/settings";
 import Profile from "./Frontend/components/Dashboard/profile";
-import AIChat from "./Frontend/components/chatbot/AIChat";
-import Contact from "./Frontend/components/Contact/contact";
+import AnalyticsReport from "./Frontend/components/Dashboard/analytics";
+import FinancialReportPage from "./Frontend/components/Dashboard/FinancialReportPage";
+import CurrencyConverter from "./Frontend/components/Dashboard/CurrencyConverter";
+import Questionnaire from "./Frontend/components/Dashboard/Questionnaire";
 import AdminDashboard from "./Frontend/components/Dashboard/AdminDashboard";
 import UserDetails from "./Frontend/components/Dashboard/UserDetails";
+
+import Chatbot from "./Frontend/components/chatbot/chatbot";
+import AIChat from "./Frontend/components/chatbot/AIChat";
+import Contact from "./Frontend/components/Contact/contact";
+
 import ProtectedRoute from "./Frontend/components/Auth/ProtectedRoute";
 import AdminRoute from "./Frontend/components/Auth/AdminRoute";
 
@@ -45,7 +48,7 @@ function App() {
             }
           />
 
-          {/* Login Page */}
+          {/* Auth Pages */}
           <Route
             path="/login"
             element={
@@ -55,10 +58,8 @@ function App() {
               </>
             }
           />
-
-          {/* Signup Page */}
           <Route
-            path="/Signup"
+            path="/signup"
             element={
               <>
                 <MiniNavbar />
@@ -69,7 +70,7 @@ function App() {
 
           {/* Protected User Routes */}
           <Route
-            path="/Dashboard"
+            path="/dashboard"
             element={
               <ProtectedRoute>
                 <>
@@ -82,26 +83,13 @@ function App() {
             }
           />
           <Route
-            path="/Settings"
+            path="/settings"
             element={
               <ProtectedRoute>
                 <>
                   <MiniNavbar />
                   <Sidebar />
                   <Settings />
-                  <Footer />
-                </>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/contact"
-            element={
-              <ProtectedRoute>
-                <>
-                  <MiniNavbar />
-                  <Sidebar />
-                  <Contact />
                   <Footer />
                 </>
               </ProtectedRoute>
@@ -134,7 +122,20 @@ function App() {
             }
           />
           <Route
-            path="/AIChat"
+            path="/contact"
+            element={
+              <ProtectedRoute>
+                <>
+                  <MiniNavbar />
+                  <Sidebar />
+                  <Contact />
+                  <Footer />
+                </>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/aichat"
             element={
               <ProtectedRoute>
                 <>
@@ -147,7 +148,7 @@ function App() {
             }
           />
           <Route
-            path="/Questionnaire"
+            path="/questionnaire"
             element={
               <ProtectedRoute>
                 <>
@@ -159,13 +160,24 @@ function App() {
               </ProtectedRoute>
             }
           />
-         <Route path="/currency-converter" element={<CurrencyConverter />} />
-          
+          <Route
+            path="/currency-converter"
+            element={
+              <ProtectedRoute>
+                <>
+                  <MiniNavbar />
+                  <Sidebar />
+                  <CurrencyConverter />
+                  <Footer />
+                </>
+              </ProtectedRoute>
+            }
+          />
 
           {/* AI Report Page */}
           <Route path="/financial-report" element={<FinancialReportPage />} />
 
-          {/* Admin Pages */}
+          {/* Admin Routes */}
           <Route
             path="/admin/dashboard"
             element={
@@ -183,7 +195,6 @@ function App() {
             }
           />
         </Routes>
-        
       </BrowserRouter>
     </AuthProvider>
   );
