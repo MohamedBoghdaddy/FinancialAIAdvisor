@@ -17,8 +17,9 @@ import rateLimit from "express-rate-limit";
 import userRoutes from "./routes/userroutes.js";
 import chatRoutes from "./routes/chatRoutes.js";
 import analyticsRoutes from "./routes/analyticRoutes.js";
-import profileRoutes from "./routes/profileRoutes.js"; // Fixed import
-import currencyRoutes from "./routes/currency.js"; // 👈 Add this line
+import profileRoutes from "./routes/profileRoutes.js";
+import currencyRoutes from "./routes/currencyRoutes.js";
+
 // 📁 Path & Env Setup
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -29,8 +30,7 @@ const PORT = process.env.PORT || 4000;
 const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:3000";
 const FLASK_API_BASE_URL = process.env.FLASK_API_URL || "http://localhost:8000";
 const JWT_SECRET = process.env.JWT_SECRET || "secure_dev_token";
-const MONGO_URL =
-  process.env.MONGO_URL || "mongodb://localhost:27017/financialAI";
+const MONGO_URL = process.env.MONGO_URL || "mongodb://localhost:27017/financialAI";
 
 // 🚨 Verify Config
 if (!MONGO_URL) {
@@ -53,6 +53,9 @@ const connectDB = async () => {
 };
 await connectDB();
 
+// 🚀 Express App Init (⚠️ Must come BEFORE routes)
+const app = express();
+
 // 🧠 Session Store
 const MongoDBStore = connectMongoDBSession(session);
 const store = new MongoDBStore({
@@ -60,9 +63,6 @@ const store = new MongoDBStore({
   collection: "sessions",
 });
 store.on("error", (err) => console.error("❌ Session store error:", err));
-
-// 🚀 Express App Init
-const app = express();
 
 // 🛡️ Security Middleware
 app.use(helmet());
@@ -80,7 +80,7 @@ app.use(
   })
 );
 
-// Rate Limiting
+// 🔐 Rate Limiting
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100,
@@ -120,8 +120,8 @@ app.use(
 app.use("/api/users", userRoutes);
 app.use("/api/chat", apiLimiter, chatRoutes);
 app.use("/api/analytics", analyticsRoutes);
-app.use("/api/profile", profileRoutes); // Using the router
-app.use("/api/currency", currencyRoutes);
+app.use("/api/profile", profileRoutes);
+app.use("/api/currency", currencyRoutes); // ✅ moved after app initialization
 
 // 🔄 FastAPI Proxy Configuration
 const forwardRequest = async (req, res, endpoint) => {
@@ -149,12 +149,8 @@ const forwardRequest = async (req, res, endpoint) => {
 // 🔄 Proxy Routes
 app.post("/api/phi/chat", (req, res) => forwardRequest(req, res, "/chat"));
 app.post("/api/phi/infer", (req, res) => forwardRequest(req, res, "/infer"));
-app.post("/api/phi/analyze", (req, res) =>
-  forwardRequest(req, res, "/analyze")
-);
-app.post("/api/phi/generate", (req, res) =>
-  forwardRequest(req, res, "/generate")
-);
+app.post("/api/phi/analyze", (req, res) => forwardRequest(req, res, "/analyze"));
+app.post("/api/phi/generate", (req, res) => forwardRequest(req, res, "/generate"));
 
 // ⚛️ Serve React Frontend in Production
 if (process.env.NODE_ENV === "production") {
