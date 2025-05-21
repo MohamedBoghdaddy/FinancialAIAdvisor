@@ -21,8 +21,6 @@ router.get("/symbols", (req, res) => {
 
   res.json({ success: true, symbols });
 });
-
-// ✅ Gemini-powered conversion (only return number + currency)
 router.get("/convert", async (req, res) => {
   const { from, to, amount } = req.query;
 
@@ -33,42 +31,20 @@ router.get("/convert", async (req, res) => {
     });
   }
 
-  const prompt = `
-You are a currency conversion expert. Convert ${amount} ${from} to ${to} using the most recent exchange rate.
-
-🚫 Do not explain.
-🚫 Do not add any sentences.
-✅ Only respond with the numeric result followed by the target currency code.
-
-Example response: 4785.00 ${to}
-`;
-
   try {
-    const geminiResponse = await axios.post(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
-      {
-        contents: [
-          {
-            role: "user",
-            parts: [
-              {
-                text: prompt,
-              },
-            ],
-          },
-        ],
-      },
-      {
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-
-    const text = geminiResponse.data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-    res.json({ success: true, result: text });
+    const response = await axios.get(`https://open.er-api.com/v6/latest/${from}`);
+    const rate = response.data?.rates?.[to];
+    if (rate) {
+      const result = (rate * parseFloat(amount)).toFixed(2);
+      return res.json({ success: true, result });
+    } else {
+      return res.status(500).json({ success: false, message: "Currency not found" });
+    }
   } catch (err) {
-    console.error("🔥 Gemini conversion error:", err.message);
-    res.status(500).json({ success: false, error: "Gemini conversion failed" });
+    console.error("💥 Currency conversion error:", err.message);
+    return res.status(500).json({ success: false, message: "API request failed" });
   }
 });
+
 
 export default router;
