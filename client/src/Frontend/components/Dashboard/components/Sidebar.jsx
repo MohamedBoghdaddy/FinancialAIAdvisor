@@ -10,16 +10,12 @@ import {
   FaWallet,
   FaUser,
   FaCogs,
+  FaCalculator,
 } from "react-icons/fa";
 import { Modal, Button } from "react-bootstrap";
 import { useAuthContext } from "../../../../context/AuthContext";
 import axios from "axios";
-<<<<<<< HEAD:client/src/Frontend/components/Dashboard/components/Sidebar.jsx
-import "../../styles/Sidebar.css";
-=======
-import { FaCalculator } from 'react-icons/fa';
-
->>>>>>> 89c3dc76849c943a1033ac6dec335496fc0f0cf8:client/src/Frontend/components/Dashboard/sidebar.js
+import "../../styles/Sidebar.css"; // ✅ Keep your CSS here
 
 const Sidebar = () => {
   const { state } = useAuthContext();
@@ -186,7 +182,6 @@ const Sidebar = () => {
             <FaWallet /> Investments
           </Link>
         </li>
-   
         <li>
           <Link to="/profile" className={linkClass("/profile")}>
             <FaUser /> Profile
@@ -202,30 +197,21 @@ const Sidebar = () => {
             <FaCog /> AIChat
           </Link>
         </li>
-      
         <li>
           <Link to="/statistics">
             <FaChartLine /> Statistics
           </Link>
         </li>
         <li>
-<<<<<<< HEAD:client/src/Frontend/components/Dashboard/components/Sidebar.jsx
           <Link to="/currency-converter">
             <FaChartLine /> Currency Converter
           </Link>
         </li>
-=======
-  <Link to="/currency-converter">
-    <FaChartLine /> Currency Converter
-  </Link>
-</li>
-<li>
-  <Link to="/loan">
-    <FaCalculator /> Loan Calculator
-  </Link>
-</li>
-
->>>>>>> 89c3dc76849c943a1033ac6dec335496fc0f0cf8:client/src/Frontend/components/Dashboard/sidebar.js
+        <li>
+          <Link to="/loan">
+            <FaCalculator /> Loan Calculator
+          </Link>
+        </li>
       </ul>
     </div>
   );
