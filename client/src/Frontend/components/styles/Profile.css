@@ -170,7 +170,41 @@ button {
 .edit-all-btn:hover {
   background-color: #d8200c;
 }
+/* 📁 styles/Profile.css */
+.expenses-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
 
+.expense-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.expense-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.expense-amount {
+  font-weight: bold;
+  color: #2ecc71;
+}
+
+.total-expenses {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  font-weight: bold;
+  text-align: right;
+}
 /* ================================
    ✅ Submitted Results
 ================================ */
@@ -367,5 +401,16 @@ textarea.form-control {
   .goals-section {
     margin-top: 1.5rem;
     padding-top: 1.5rem;
+  }
+}
+
+
+@media (max-width: 1200px) {
+  .profile-container,
+  .survey-container,
+  .photo-upload-container {
+    width: 90%;
+    padding: 15px;
+    margin-left: 20%;
   }
 }

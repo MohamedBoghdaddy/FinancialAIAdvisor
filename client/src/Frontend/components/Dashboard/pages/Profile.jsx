@@ -128,22 +128,49 @@ const Profile = () => {
   const { state: authState } = useAuthContext();
   const { user } = authState || {};
   const {
-    state: dashState = {},
-    actions: { submitProfile, fetchProfile, requestPhi2Advice },
+    state: dashState = { profile: null },
+    actions: { submitProfile, fetchProfile, requestPhi2Advice, deleteProfile },
     loading: { profile: profileLoading } = {},
-    aiAdvice = null,
-    goalPlan = null,
-    forecast = null,
+    aiAdvice,
+    goalPlan,
+    marketData,
   } = useContext(DashboardContext);
 
   const [formData, setFormData] = useState({});
   const [step, setStep] = useState(0);
   const [editMode, setEditMode] = useState(false);
   const [bulkEdit, setBulkEdit] = useState(false);
+  const [singleEditIndex, setSingleEditIndex] = useState(null);
   const [validationErrors, setValidationErrors] = useState({});
   const [localLoading, setLocalLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [completionPercent, setCompletionPercent] = useState(0);
+
+  // Custom expenses management
+  const addCustomExpense = useCallback(() => {
+    setFormData((prev) => ({
+      ...prev,
+      customExpenses: [
+        ...(prev.customExpenses || []),
+        { name: "", amount: "" },
+      ],
+    }));
+  }, []);
+
+  const removeCustomExpense = useCallback((index) => {
+    setFormData((prev) => ({
+      ...prev,
+      customExpenses: (prev.customExpenses || []).filter((_, i) => i !== index),
+    }));
+  }, []);
+
+  const updateCustomExpense = useCallback((index, key, value) => {
+    setFormData((prev) => {
+      const updated = [...(prev.customExpenses || [])];
+      updated[index] = { ...updated[index], [key]: value };
+      return { ...prev, customExpenses: updated };
+    });
+  }, []);
 
   const validateField = useCallback((id, value) => {
     const question = questions.find((q) => q.id === id);
@@ -158,13 +185,24 @@ const Profile = () => {
         return `Maximum value is ${question.max}`;
     }
     if (question.type === "select" && !value) return "Please select an option";
+    if (id === "customExpenses") {
+      const invalidExpenses = value.filter((e) => !e.name || !e.amount);
+      if (invalidExpenses.length > 0) return "Please fill all expense fields";
+    }
     return "";
   }, []);
 
   const calculateCompletion = useCallback(() => {
     const filled = Object.keys(formData).filter(
-      (k) => formData[k] !== "" && formData[k] !== undefined
+      (k) =>
+        formData[k] !== "" &&
+        formData[k] !== undefined &&
+        !Array.isArray(formData[k])
     );
+    const expenseCount = (formData.customExpenses || []).filter(
+      (e) => e.name && e.amount
+    ).length;
+    const totalFields = questions.length + expenseCount;
     setCompletionPercent(Math.round((filled.length / questions.length) * 100));
   }, [formData]);
 
@@ -203,12 +241,12 @@ const Profile = () => {
               <select
                 value={value}
                 onChange={(e) => handleChange(question.id, e.target.value)}
-                className="input-field"
+                className="select-field"
               >
                 <option value="">Select an option</option>
-                {question.options.map((opt) => (
-                  <option key={opt.value || opt} value={opt.value || opt}>
-                    {opt.label || opt}
+                {question.options.map((option, index) => (
+                  <option key={index} value={option.value || option}>
+                    {option.label || option}
                   </option>
                 ))}
               </select>
@@ -217,22 +255,23 @@ const Profile = () => {
           );
         case "slider":
           return (
-            <div className="input-group slider-container">
-              <div className="slider-wrapper">
-                <input
-                  type="range"
-                  min={question.min}
-                  max={question.max}
-                  value={value || 5}
-                  onChange={(e) => handleChange(question.id, e.target.value)}
-                  className="slider"
-                />
-                <div className="slider-labels">
-                  <span>{question.labels[0]}</span>
-                  <span className="slider-value">{value || 5}</span>
-                  <span>{question.labels[1]}</span>
-                </div>
+            <div className="input-group slider-group">
+              <div className="slider-labels">
+                <span>{question.labels[0]}</span>
+                <span>{question.labels[1]}</span>
               </div>
+              <input
+                type="range"
+                min={question.min}
+                max={question.max}
+                value={value || question.min}
+                onChange={(e) => handleChange(question.id, e.target.value)}
+                className="slider-field"
+              />
+              <div className="slider-value">
+                Selected: {value || question.min}
+              </div>
+              {error && <span className="error-text">{error}</span>}
             </div>
           );
         case "textarea":
@@ -241,15 +280,25 @@ const Profile = () => {
               <textarea
                 value={value}
                 onChange={(e) => handleChange(question.id, e.target.value)}
-                className="input-field"
                 placeholder={question.placeholder}
-                rows={4}
+                className="textarea-field"
+                rows="4"
               />
               {error && <span className="error-text">{error}</span>}
             </div>
           );
         default:
-          return null;
+          return (
+            <div className="input-group">
+              <input
+                type="text"
+                value={value}
+                onChange={(e) => handleChange(question.id, e.target.value)}
+                className="input-field"
+              />
+              {error && <span className="error-text">{error}</span>}
+            </div>
+          );
       }
     },
     [formData, validationErrors, handleChange]
@@ -269,68 +318,95 @@ const Profile = () => {
     }
   };
 
+  const handleDeleteProfile = async () => {
+    if (window.confirm("Are you sure you want to delete your profile?")) {
+      try {
+        await deleteProfile();
+        setFormData({});
+        toast.success("Profile deleted successfully");
+      } catch (error) {
+        toast.error("Error deleting profile");
+      }
+    }
+  };
+
   const handleSubmit = async () => {
+    const errors = {};
+
     if (bulkEdit) {
-      const errors = {};
       questions.forEach((q) => {
         const error = validateField(q.id, formData[q.id]);
         if (error) errors[q.id] = error;
       });
-      setValidationErrors(errors);
-      if (Object.keys(errors).length > 0) {
-        toast.error("Please fix all errors before saving.");
-        return;
-      }
+    } else if (singleEditIndex !== null) {
+      const question = questions[singleEditIndex];
+      const error = validateField(question.id, formData[question.id]);
+      if (error) errors[question.id] = error;
     } else {
       const currentQuestion = questions[step];
       const error = validateField(
         currentQuestion.id,
         formData[currentQuestion.id]
       );
-      if (error) {
-        setValidationErrors((prev) => ({
-          ...prev,
-          [currentQuestion.id]: error,
-        }));
-        toast.error(`Please complete the current question: ${error}`);
-        return;
-      }
+      if (error) errors[currentQuestion.id] = error;
+    }
+
+    // Validate custom expenses
+    const expenseError = validateField(
+      "customExpenses",
+      formData.customExpenses || []
+    );
+    if (expenseError) errors.customExpenses = expenseError;
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      toast.error("Please fix errors before saving.");
+      return;
     }
 
     setSubmitting(true);
     try {
-      await submitProfile(formData);
+      await submitProfile({
+        ...formData,
+        customExpenses:
+          formData.customExpenses?.filter((e) => e.name && e.amount) || [],
+      });
       toast.success("Profile saved successfully");
       setEditMode(false);
       setBulkEdit(false);
+      setSingleEditIndex(null);
     } catch (error) {
-      toast.error("Error saving profile");
+      toast.error(error.response?.data?.message || "Error saving profile");
     } finally {
       setSubmitting(false);
     }
   };
 
   useEffect(() => {
-    if (dashState.profile) setFormData(dashState.profile);
-  }, [dashState.profile]);
-
-  useEffect(() => {
-    calculateCompletion();
-  }, [formData, calculateCompletion]);
-
-  useEffect(() => {
-    const loadProfile = async () => {
-      if (!user?.token) return setLocalLoading(false);
+    // Initial fetch and token changes only
+    const controller = new AbortController();
+    const loadInitialProfile = async () => {
+      if (!user?.token) return;
       try {
-        await fetchProfile();
-      } catch (error) {
-        toast.error("Failed to load profile data");
+        await fetchProfile(controller.signal);
       } finally {
         setLocalLoading(false);
       }
     };
-    loadProfile();
-  }, [user, fetchProfile]);
+    loadInitialProfile();
+    return () => controller.abort();
+  }, [user, fetchProfile]); // Remove dashState.profile from dependencies
+
+  // Separate effect for syncing form data
+  useEffect(() => {
+    if (dashState.profile) {
+      setFormData({ ...dashState.profile });
+      setEditMode(false);
+    }
+  }, [dashState.profile]); // Only sync form data without fetching
+  useEffect(() => {
+    calculateCompletion();
+  }, [formData, calculateCompletion]);
 
   if (localLoading || profileLoading) {
     return (
@@ -362,7 +438,7 @@ const Profile = () => {
             questions={questions}
             aiAdvice={aiAdvice}
             goalPlan={goalPlan}
-            forecast={forecast}
+            marketData={marketData}
             onEditAll={() => {
               setEditMode(true);
               setBulkEdit(true);
@@ -370,33 +446,33 @@ const Profile = () => {
             onEditSpecific={(index) => {
               setEditMode(true);
               setBulkEdit(false);
-              setStep(index);
+              setSingleEditIndex(index);
             }}
             handleExportPDF={handleExportPDF}
             handleRequestAI={handleRequestAI}
+            handleDelete={handleDeleteProfile}
+          />
+        ) : singleEditIndex !== null ? (
+          <SingleEditMode
+            questionIndex={singleEditIndex}
+            handleSubmit={handleSubmit}
+            submitting={submitting}
+            onCancel={() => {
+              setEditMode(false);
+              setSingleEditIndex(null);
+            }}
+            renderQuestionInput={renderQuestionInput}
+            validationErrors={validationErrors}
           />
         ) : bulkEdit ? (
-          <div className="bulk-edit-mode">
-            {questions.map((q) => (
-              <div key={q.id} className="question-item">
-                <label>{q.text}</label>
-                {renderQuestionInput(q)}
-              </div>
-            ))}
-            <div className="profile-actions">
-              <button onClick={handleSubmit} disabled={submitting}>
-                {submitting ? "Saving..." : "💾 Save Profile"}
-              </button>
-              <button
-                onClick={() => {
-                  setEditMode(false);
-                  setBulkEdit(false);
-                }}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
+          <BulkEditMode
+            questions={questions}
+            renderQuestionInput={renderQuestionInput}
+            validationErrors={validationErrors}
+            handleSubmit={handleSubmit}
+            submitting={submitting}
+            onCancel={() => setEditMode(false)}
+          />
         ) : (
           <QuestionFlow
             step={step}
@@ -409,6 +485,9 @@ const Profile = () => {
             }
             handleSubmit={handleSubmit}
             submitting={submitting}
+            addCustomExpense={addCustomExpense}
+            removeCustomExpense={removeCustomExpense}
+            updateCustomExpense={updateCustomExpense}
             renderQuestionInput={renderQuestionInput}
           />
         )}
@@ -422,19 +501,23 @@ const ProfileView = ({
   questions,
   aiAdvice,
   goalPlan,
-  forecast,
+  marketData,
   onEditAll,
   onEditSpecific,
   handleExportPDF,
   handleRequestAI,
+  handleDelete,
 }) => (
   <div className="submitted-results">
     <div className="profile-actions">
       <button onClick={onEditAll} className="edit-all-btn">
-        📝 Edit All Responses
+        📝 Edit All
       </button>
       <button onClick={handleExportPDF}>📄 Export PDF</button>
-      <button onClick={handleRequestAI}>🤖 Get AI Insights</button>
+      <button onClick={handleRequestAI}>🤖 AI Insights</button>
+      <button onClick={handleDelete} className="delete-btn">
+        🗑️ Delete Profile
+      </button>
     </div>
 
     <div className="profile-summary">
@@ -449,11 +532,23 @@ const ProfileView = ({
           </button>
         </div>
       ))}
+      {formData.customExpenses?.length > 0 && (
+        <div className="expenses-summary">
+          <h4>Custom Expenses</h4>
+          {formData.customExpenses.map((expense, index) => (
+            <div key={index} className="expense-item">
+              <p>
+                {expense.name}: ${expense.amount}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
 
     {aiAdvice && (
       <div className="ai-advice-section">
-        <h3>💡 AI Financial Recommendations</h3>
+        <h3>💡 AI Recommendations</h3>
         <p>{aiAdvice.summary}</p>
         <ul>
           {aiAdvice.advice?.map((tip, i) => (
@@ -465,7 +560,7 @@ const ProfileView = ({
 
     {goalPlan && (
       <div className="goal-plan-section">
-        <h3>🎯 Your Personalized Goal Plan</h3>
+        <h3>🎯 Goal Plan</h3>
         {goalPlan.map((goal, i) => (
           <div key={i}>
             <h4>🏁 {goal.goal}</h4>
@@ -481,21 +576,82 @@ const ProfileView = ({
       </div>
     )}
 
-    {forecast && (
+    {marketData?.stockPredictions && (
       <div className="forecast">
-        <h3>📈 Financial Forecast</h3>
+        <h3>📈 Market Forecast</h3>
         <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={forecast}>
-            <XAxis dataKey="month" />
+          <LineChart data={marketData.stockPredictions}>
+            <XAxis dataKey="date" />
             <YAxis />
             <Tooltip />
-            <Line type="monotone" dataKey="savings" stroke="#8884d8" />
+            <Line
+              type="monotone"
+              dataKey="value"
+              stroke="#8884d8"
+              name="Stock Prediction"
+            />
           </LineChart>
         </ResponsiveContainer>
       </div>
     )}
   </div>
 );
+
+const BulkEditMode = ({
+  questions,
+  renderQuestionInput,
+  validationErrors,
+  handleSubmit,
+  submitting,
+  onCancel,
+}) => (
+  <div className="bulk-edit-mode">
+    {questions.map((q) => (
+      <div key={q.id} className="question-item">
+        <label>{q.text}</label>
+        {renderQuestionInput(q)}
+        {validationErrors[q.id] && (
+          <span className="error-text">{validationErrors[q.id]}</span>
+        )}
+      </div>
+    ))}
+    <div className="profile-actions">
+      <button onClick={handleSubmit} disabled={submitting}>
+        {submitting ? "Saving..." : "💾 Save Profile"}
+      </button>
+      <button onClick={onCancel}>Cancel</button>
+    </div>
+  </div>
+);
+
+const SingleEditMode = ({
+  questionIndex,
+  handleSubmit,
+  submitting,
+  onCancel,
+  renderQuestionInput,
+  validationErrors,
+}) => {
+  const question = questions[questionIndex];
+
+  return (
+    <div className="single-edit-mode">
+      <div className="question-item">
+        <label>{question.text}</label>
+        {renderQuestionInput(question)}
+        {validationErrors[question.id] && (
+          <span className="error-text">{validationErrors[question.id]}</span>
+        )}
+      </div>
+      <div className="profile-actions">
+        <button onClick={handleSubmit} disabled={submitting}>
+          {submitting ? "Saving..." : "💾 Save Changes"}
+        </button>
+        <button onClick={onCancel}>Cancel</button>
+      </div>
+    </div>
+  );
+};
 
 const QuestionFlow = ({
   step,
@@ -506,6 +662,9 @@ const QuestionFlow = ({
   handleNext,
   handleSubmit,
   submitting,
+  addCustomExpense,
+  removeCustomExpense,
+  updateCustomExpense,
   renderQuestionInput,
 }) => (
   <div className="question-block">
@@ -522,6 +681,46 @@ const QuestionFlow = ({
     <div className="question-content">
       <h3>{questions[step].text}</h3>
       {renderQuestionInput(questions[step])}
+
+      {step === questions.length - 1 && (
+        <div className="custom-expense-section">
+          <h4>➕ Additional Monthly Expenses</h4>
+          {(formData.customExpenses || []).map((item, index) => (
+            <div key={`expense-${index}`} className="expense-row">
+              <input
+                type="text"
+                placeholder="Expense name"
+                value={item.name}
+                onChange={(e) =>
+                  updateCustomExpense(index, "name", e.target.value)
+                }
+              />
+              <input
+                type="number"
+                placeholder="Amount ($)"
+                value={item.amount}
+                onChange={(e) =>
+                  updateCustomExpense(index, "amount", e.target.value)
+                }
+              />
+              <button
+                onClick={() => removeCustomExpense(index)}
+                className="remove-btn"
+              >
+                🗑️
+              </button>
+            </div>
+          ))}
+          <button onClick={addCustomExpense} className="add-expense-btn">
+            ➕ Add Another Expense
+          </button>
+          {validationErrors.customExpenses && (
+            <span className="error-text">
+              {validationErrors.customExpenses}
+            </span>
+          )}
+        </div>
+      )}
     </div>
 
     <div className="navigation-buttons">
@@ -546,5 +745,52 @@ const QuestionFlow = ({
     </div>
   </div>
 );
+
+// Prop type validations
+ProfileView.propTypes = {
+  formData: PropTypes.object.isRequired,
+  questions: PropTypes.array.isRequired,
+  aiAdvice: PropTypes.object,
+  goalPlan: PropTypes.array,
+  marketData: PropTypes.object,
+  onEditAll: PropTypes.func.isRequired,
+  onEditSpecific: PropTypes.func.isRequired,
+  handleExportPDF: PropTypes.func.isRequired,
+  handleRequestAI: PropTypes.func.isRequired,
+  handleDelete: PropTypes.func.isRequired,
+};
+
+BulkEditMode.propTypes = {
+  questions: PropTypes.array.isRequired,
+  renderQuestionInput: PropTypes.func.isRequired,
+  validationErrors: PropTypes.object.isRequired,
+  handleSubmit: PropTypes.func.isRequired,
+  submitting: PropTypes.bool.isRequired,
+  onCancel: PropTypes.func.isRequired,
+};
+
+SingleEditMode.propTypes = {
+  questionIndex: PropTypes.number.isRequired,
+  handleSubmit: PropTypes.func.isRequired,
+  submitting: PropTypes.bool.isRequired,
+  onCancel: PropTypes.func.isRequired,
+  renderQuestionInput: PropTypes.func.isRequired,
+  validationErrors: PropTypes.object.isRequired,
+};
+
+QuestionFlow.propTypes = {
+  step: PropTypes.number.isRequired,
+  questions: PropTypes.array.isRequired,
+  formData: PropTypes.object.isRequired,
+  validationErrors: PropTypes.object.isRequired,
+  handleBack: PropTypes.func.isRequired,
+  handleNext: PropTypes.func.isRequired,
+  handleSubmit: PropTypes.func.isRequired,
+  submitting: PropTypes.bool.isRequired,
+  addCustomExpense: PropTypes.func.isRequired,
+  removeCustomExpense: PropTypes.func.isRequired,
+  updateCustomExpense: PropTypes.func.isRequired,
+  renderQuestionInput: PropTypes.func.isRequired,
+};
 
 export default Profile;

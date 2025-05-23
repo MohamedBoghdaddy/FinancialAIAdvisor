@@ -104,7 +104,7 @@ export const getLatestProfile = async (req, res) => {
  * Create or update profile for authenticated user
  */
 export const createOrUpdateProfile = async (req, res) => {
-  // Validate input data
+  // Step 1: Validate incoming request
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({
@@ -115,46 +115,41 @@ export const createOrUpdateProfile = async (req, res) => {
 
   try {
     const { _id: userId } = req.user;
-    let updateData = { ...req.body };
 
-    // Clean and normalize custom expenses
-    if (updateData.customExpenses) {
+    // Step 2: Sanitize input
+    const updateData = {
+      ...req.body,
+      userId,
+      lastUpdated: new Date(),
+      updatedBy: userId,
+    };
+
+    if (Array.isArray(updateData.customExpenses)) {
       updateData.customExpenses = updateData.customExpenses
-        .map((expense) => ({
-          name: expense.name.trim(),
-          amount: Number(expense.amount),
+        .map((exp) => ({
+          name: (exp.name || "").trim(),
+          amount: Number(exp.amount),
         }))
-        .filter((expense) => expense.name && !isNaN(expense.amount));
+        .filter((exp) => exp.name && !isNaN(exp.amount));
     }
 
-    // Audit fields
-    updateData.lastUpdated = new Date();
-    updateData.updatedBy = userId;
-
-    // Find if profile exists before update (to detect creation)
+    // Step 3: Check if it's a creation or update
     const existingProfile = await Profile.findOne({ userId });
 
-    const options = {
+    const profile = await Profile.findOneAndUpdate({ userId }, updateData, {
       new: true,
       upsert: true,
       runValidators: true,
       setDefaultsOnInsert: true,
-    };
+    });
 
-    const profile = await Profile.findOneAndUpdate(
-      { userId },
-      updateData,
-      options
-    );
-
-    // Calculate total expenses for response
+    // Step 4: Calculate total expenses (optional for frontend UI)
     const responseData = profile.toObject();
-    responseData.totalMonthlyExpenses =
-      responseData.customExpenses?.reduce(
-        (total, expense) => total + (expense.amount || 0),
-        0
-      ) || 0;
+    responseData.totalMonthlyExpenses = (
+      responseData.customExpenses || []
+    ).reduce((sum, exp) => sum + (exp.amount || 0), 0);
 
+    // Step 5: Send response
     res.status(200).json({
       success: true,
       message: existingProfile ? "Profile updated" : "Profile created",
