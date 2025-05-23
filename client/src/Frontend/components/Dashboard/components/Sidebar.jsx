@@ -178,7 +178,7 @@ const Sidebar = () => {
           </Link>
         </li>
         <li>
-          <Link to="/Investments" className={linkClass("/investments")}>
+          <Link to="/InvestmentCard" className={linkClass("/InvestmentCard")}>
             <FaWallet /> Investments
           </Link>
         </li>

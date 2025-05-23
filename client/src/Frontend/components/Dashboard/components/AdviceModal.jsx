@@ -1,7 +1,18 @@
+import { useEffect, useState } from "react";
 import { Modal, Button } from "react-bootstrap";
+import adviceList from "../../data/adviceList";
 
-const AIAdviceModal = ({ show, onHide, aiAdvice }) => {
-  const adviceLines = (aiAdvice || "").split("\n"); // ✅ Prevents 'undefined.split' error
+const AIAdviceModal = ({ show, onHide }) => {
+  const [randomAdvice, setRandomAdvice] = useState([]);
+
+  useEffect(() => {
+    if (show) {
+      // Pick 3–5 random unique advice tips
+      const shuffled = [...adviceList].sort(() => 0.5 - Math.random());
+      const selected = shuffled.slice(0, 4);
+      setRandomAdvice(selected);
+    }
+  }, [show]);
 
   return (
     <Modal show={show} onHide={onHide} centered>
@@ -9,8 +20,8 @@ const AIAdviceModal = ({ show, onHide, aiAdvice }) => {
         <Modal.Title>AI Financial Advice</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        {adviceLines.map((line, index) => (
-          <p key={index}>{line}</p>
+        {randomAdvice.map((tip, idx) => (
+          <p key={idx}>✅ {tip}</p>
         ))}
       </Modal.Body>
       <Modal.Footer>

@@ -5,7 +5,7 @@ import { ToastContainer, toast } from "react-toastify";
 import { CSVLink } from "react-csv";
 import AdminSidebar from "./AdminSidebar";
 import "react-toastify/dist/ReactToastify.css";
-import "../styles/admin.css";
+import "../../styles/admin.css";
 
 const AdminDashboard = () => {
     const navigate = useNavigate();

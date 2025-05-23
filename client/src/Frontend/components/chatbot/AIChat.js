@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useContext,
+} from "react";
 import {
   Container,
   Card,
@@ -7,16 +13,16 @@ import {
   Spinner,
   Alert,
   Badge,
-  Modal,
 } from "react-bootstrap";
-import { useAuthContext } from "../../../context/AuthContext";
-import axios from "axios";
-import Cookies from "js-cookie";
 import { FaStopCircle, FaCopy, FaLanguage } from "react-icons/fa";
 import Select from "react-select";
 import ReactMarkdown from "react-markdown";
+import axios from "axios";
+import Cookies from "js-cookie";
 import { ErrorBoundary } from "react-error-boundary";
-import "../styles/chat.css";
+import { useAuthContext } from "../../../context/AuthContext";
+import { DashboardContext } from "../../../context/DashboardContext";
+import "../styles/AIChat.css";
 
 const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8000";
 
@@ -30,25 +36,19 @@ const languageOptions = [
 ];
 
 const useSpeech = () => {
-  const synth = useRef(
-    typeof window !== "undefined" ? window.speechSynthesis : null
-  );
+  const synth = useRef(window.speechSynthesis);
   useEffect(() => () => synth.current?.cancel(), []);
-
   const speak = useCallback((text) => {
     const utterance = new SpeechSynthesisUtterance(text.slice(0, 250));
     utterance.lang = "en-US";
     synth.current?.speak(utterance);
   }, []);
-
   const stop = useCallback(() => synth.current?.cancel(), []);
   return { speak, stop };
 };
 
 const MessageBubble = ({ msg, onCopy, onTranslate }) => (
-  <div
-    className={`message ${msg.role === "user" ? "user-message" : "ai-message"}`}
-  >
+  <div className={`message ${msg.role}-message`}>
     <ReactMarkdown className="message-content">{msg.text}</ReactMarkdown>
     <div className="message-footer">
       <small className="message-timestamp">{msg.time}</small>
@@ -74,23 +74,17 @@ const ErrorFallback = () => (
 
 const AIChat = () => {
   const { state } = useAuthContext();
-  const { user, isAuthenticated } = state;
-  const messagesEndRef = useRef(null);
+  const { profileData } = useContext(DashboardContext);
+  const { user } = state;
+  const { speak, stop } = useSpeech();
 
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
-  const [error, setError] = useState(null);
-  const [context, setContext] = useState(null);
-  const [questionnaire, setQuestionnaire] = useState(null);
-  const [analysis, setAnalysis] = useState({ summary: null, full: null });
   const [selectedLanguage, setSelectedLanguage] = useState(languageOptions[0]);
-  const [showFullAnalysis, setShowFullAnalysis] = useState(false);
+  const [error, setError] = useState(null);
   const [dots, setDots] = useState("");
-  const [usedProfile, setUsedProfile] = useState(false);
-
-  const { speak, stop } = useSpeech();
+  const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -99,131 +93,53 @@ const AIChat = () => {
   const formatTime = () =>
     new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-  const fetchData = useCallback(async () => {
-    const token = Cookies.get("token") || localStorage.getItem("token");
-    if (!isAuthenticated || !token) return;
-
-    try {
-      const [historyRes, contextRes, questionnaireRes] = await Promise.all([
-        axios.get(`${API_URL}/api/chat/history`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        axios.get(`${API_URL}/api/chat/context/${user._id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        axios.get(`${API_URL}/api/profile/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-      ]);
-
-      setMessages(historyRes.data);
-      setContext(contextRes.data);
-      setQuestionnaire(questionnaireRes.data);
-    } catch (err) {
-      console.error("Initialization error:", err);
-      setError("Failed to load chat data");
-    }
-  }, [isAuthenticated, user]);
-
-  const analyzeProfile = useCallback(async () => {
-    const token = Cookies.get("token") || localStorage.getItem("token");
-    try {
-      const res = await axios.post(
-        `${API_URL}/analyze_profile`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      const full = res.data.response;
-      const summary = full.split("\n").slice(0, 3).join(" ");
-      setAnalysis({ summary, full });
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "ai",
-          text: `🧠 **Financial Analysis Summary:**\n${summary}\n\n💡 **Suggested Questions:**\n- How can I improve my savings?\n- What investments suit my profile?\n- How to optimize my budget?`,
-          time: formatTime(),
-        },
-      ]);
-      setUsedProfile(true);
-    } catch (err) {
-      console.error("Analysis error:", err);
-      setError("Failed to analyze financial profile");
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchData();
-    const savedChat = localStorage.getItem("chatHistory");
-    if (savedChat) setMessages(JSON.parse(savedChat));
-  }, [fetchData]);
-
-  useEffect(() => {
-    if (questionnaire && !usedProfile) {
-      analyzeProfile();
-    }
-  }, [questionnaire, usedProfile, analyzeProfile]);
-
-  useEffect(() => {
-    scrollToBottom();
-    localStorage.setItem("chatHistory", JSON.stringify(messages));
-  }, [messages]);
-
-  useEffect(() => {
-    if (isTyping) {
-      const interval = setInterval(() => {
-        setDots((prev) => (prev.length >= 3 ? "" : prev + "."));
-      }, 500);
-      return () => clearInterval(interval);
-    }
-  }, [isTyping]);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
-    const userMessage = {
-      role: "user",
-      text: input,
-      time: formatTime(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
+    const userMsg = { role: "user", text: input, time: formatTime() };
+    setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setIsLoading(true);
-    setIsTyping(true);
     setError(null);
 
     try {
-      const token = Cookies.get("token") || localStorage.getItem("token");
-      const response = await axios.post(
+      const endpoints = [
+        "http://127.0.0.1:8000/budget-advice", // ✅ matches FastAPI route
+        "http://localhost:8000/budget-advice",
         `${API_URL}/chat`,
-        { message: input, userId: user._id },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      ];
 
-      const aiMessage = {
+      let response;
+      for (const endpoint of endpoints) {
+        try {
+          response = await axios.post(endpoint, {
+            message: input,
+            userId: user._id,
+            salary: profileData?.salary,
+          });
+          if (response.status === 200) break;
+        } catch (err) {
+          console.warn(`Failed with ${endpoint}, trying next...`);
+        }
+      }
+
+      const aiMsg = {
         role: "ai",
-        text: response.data?.response || "No response generated",
+        text: response?.data?.response || "🤖 No response from AI.",
         time: formatTime(),
       };
 
-      setMessages((prev) => [...prev, aiMessage]);
-      speak(aiMessage.text);
+      setMessages((prev) => [...prev, aiMsg]);
+      speak(aiMsg.text);
     } catch (err) {
-      console.error("Chat error:", err);
       setError("Failed to process your message. Please try again.");
       setMessages((prev) => [
         ...prev,
-        {
-          role: "error",
-          text: "❌ Sorry, I'm having trouble responding. Please try again.",
-          time: formatTime(),
-        },
+        { role: "error", text: "❌ AI is unavailable.", time: formatTime() },
       ]);
     } finally {
       setIsLoading(false);
-      setIsTyping(false);
     }
   };
 
@@ -242,119 +158,73 @@ const AIChat = () => {
         text,
         targetLang: selectedLanguage.value,
       });
-
       setMessages((prev) => [
         ...prev,
         {
           role: "ai",
-          text: `🌍 **Translation (${selectedLanguage.label}):** ${res.data.translation}`,
+          text: `🌍 **${selectedLanguage.label} Translation:** ${res.data.translation}`,
           time: formatTime(),
         },
       ]);
-    } catch (err) {
-      console.error("Translation error:", err);
+    } catch {
       setMessages((prev) => [
         ...prev,
-        {
-          role: "error",
-          text: "❌ Translation failed",
-          time: formatTime(),
-        },
+        { role: "error", text: "❌ Translation failed", time: formatTime() },
       ]);
     }
   };
 
-  const resetChat = () => {
-    localStorage.removeItem("chatHistory");
-    setMessages([]);
-    setUsedProfile(false);
-    setAnalysis({ summary: null, full: null });
-    setShowFullAnalysis(false);
-  };
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  useEffect(() => {
+    if (isLoading) {
+      const interval = setInterval(() => {
+        setDots((prev) => (prev.length >= 3 ? "" : prev + "."));
+      }, 500);
+      return () => clearInterval(interval);
+    }
+  }, [isLoading]);
 
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
-      <Container className="chatbot-container">
-        <Card className="chat-card">
+      <Container className="centered-chat-container">
+        <Card className="large-chat-card">
           <Card.Header className="chat-header">
             <div className="chat-title">
-              <div className="chat-avatar">
-                <img src="/ai-avatar.png" alt="AI Assistant" />
-              </div>
-              <div>
-                <h5>💬 AI Financial Advisor</h5>
-                <p className="chat-status">
-                  <span className="status-icon">●</span> Online
-                </p>
+              <h2>💬 AI Financial Advisor</h2>
+              <div className="profile-badges">
                 {user?.username && (
-                  <Badge bg="primary" className="ms-2">
+                  <Badge bg="primary" className="me-2">
                     {user.username}
+                  </Badge>
+                )}
+                {profileData?.salary && (
+                  <Badge bg="success">
+                    Annual Salary: ${profileData.salary.toLocaleString()}
                   </Badge>
                 )}
               </div>
             </div>
-            {context?.summary && (
-              <div className="context-summary">
-                <small>{context.summary}</small>
-              </div>
-            )}
           </Card.Header>
 
           <Card.Body className="chat-body">
-            {questionnaire && (
-              <div className="financial-profile">
-                <h5>📋 Your Financial Profile</h5>
-                {Object.entries(questionnaire).map(([key, value]) => (
-                  <div key={key} className="profile-item">
-                    <strong>{key.replace(/_/g, " ")}:</strong> {value}
-                  </div>
-                ))}
-                {analysis.summary && (
-                  <div className="analysis-summary">
-                    <h6>🧠 Financial Analysis</h6>
-                    <p>{analysis.summary}</p>
-                    <Button
-                      variant="link"
-                      size="sm"
-                      onClick={() => setShowFullAnalysis(!showFullAnalysis)}
-                    >
-                      {showFullAnalysis ? "Hide Details" : "Show Full Analysis"}
-                    </Button>
-                    {showFullAnalysis && (
-                      <div className="full-analysis">
-                        <ReactMarkdown>{analysis.full}</ReactMarkdown>
-                      </div>
-                    )}
-                  </div>
-                )}
+            {messages.map((msg, idx) => (
+              <div key={`${msg.time}-${idx}`} className="message-row">
+                <MessageBubble
+                  msg={msg}
+                  onCopy={copyToClipboard}
+                  onTranslate={translateMessage}
+                />
+              </div>
+            ))}
+            {isLoading && (
+              <div className="typing-indicator">
+                <span>Generating response{dots}</span>
               </div>
             )}
-
-            <div className="chat-messages-container">
-              {messages.map((msg, index) => (
-                <div
-                  key={`${msg.time}-${index}`}
-                  className={`message-row ${
-                    msg.role === "user" ? "user-row" : "bot-row"
-                  }`}
-                >
-                  <div className="message-avatar">
-                    {msg.role === "user" ? "👤" : "🤖"}
-                  </div>
-                  <MessageBubble
-                    msg={msg}
-                    onCopy={copyToClipboard}
-                    onTranslate={translateMessage}
-                  />
-                </div>
-              ))}
-              {isTyping && (
-                <div className="typing-indicator">
-                  <span>Generating response{dots}</span>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
+            <div ref={messagesEndRef} />
           </Card.Body>
 
           <Card.Footer className="chat-footer">
@@ -364,12 +234,12 @@ const AIChat = () => {
               <div className="chat-input-container">
                 <Form.Control
                   as="textarea"
-                  className="chat-input"
+                  rows={2}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="Ask about investments, savings, or financial planning..."
+                  className="enhanced-input"
                   disabled={isLoading}
-                  rows={1}
                 />
 
                 <div className="controls-wrapper">
@@ -377,39 +247,34 @@ const AIChat = () => {
                     className="language-select"
                     options={languageOptions}
                     value={selectedLanguage}
-                    onChange={(option) => setSelectedLanguage(option)}
+                    onChange={setSelectedLanguage}
                     isSearchable={false}
                   />
 
                   <Button
                     variant="primary"
                     type="submit"
-                    className="chat-send-btn"
+                    className="send-button"
                     disabled={isLoading || !input.trim()}
                   >
-                    {isLoading ? <Spinner size="sm" /> : "↑"}
+                    {isLoading ? (
+                      <Spinner animation="border" size="sm" />
+                    ) : (
+                      "Send"
+                    )}
                   </Button>
 
                   <Button
-                    variant="secondary"
+                    variant="danger"
                     onClick={stop}
+                    className="stop-button"
                     title="Stop speech"
-                    className="stop-btn"
                   >
                     <FaStopCircle />
                   </Button>
                 </div>
               </div>
             </Form>
-
-            <Button
-              variant="outline-danger"
-              onClick={resetChat}
-              className="mt-3"
-              size="sm"
-            >
-              🗑️ Clear Chat History
-            </Button>
           </Card.Footer>
         </Card>
       </Container>

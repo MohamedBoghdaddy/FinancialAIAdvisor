@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
-import "../styles/admin.css";
+import "../../styles/admin.css";
 import { toast } from "react-toastify";
 
 const UserDetails = () => {

@@ -2,7 +2,7 @@ import React from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import { AuthProvider } from "./context/AuthContext";
-import LoanCalculator from './Frontend/components/Dashboard/LoanCalculator';
+import LoanCalculator from "./Frontend/components/Dashboard/tools/LoanCalculator";
 
 // Frontend Components
 import Home from "./Frontend/components/Home/home";
@@ -19,18 +19,15 @@ import Settings from "./Frontend/components/Dashboard/pages/Settings.jsx";
 import Profile from "./Frontend/components/Dashboard/pages/Profile.jsx";
 import AnalyticsReport from "./Frontend/components/Dashboard/analytics";
 import FinancialReportPage from "./Frontend/components/Dashboard/pages/FinancialReport";
-import CurrencyConverter from "./Frontend/components/Dashboard/CurrencyConverter";
-import AdminDashboard from "./Frontend/components/Dashboard/AdminDashboard";
-import UserDetails from "./Frontend/components/Dashboard/UserDetails";
+import CurrencyConverter from "./Frontend/components/Dashboard/tools/CurrencyConverter";
+import AdminDashboard from "./Frontend/components/Dashboard/admin/AdminDashboard.js";
+import UserDetails from "./Frontend/components/Dashboard/admin/UserDetails";
 
 import Chatbot from "./Frontend/components/chatbot/chatbot";
 import AIChat from "./Frontend/components/chatbot/AIChat";
 import Contact from "./Frontend/components/Contact/contact";
 
-import AdviceTabs from "./Frontend/components/Dashboard/tabs/Advice.jsx";
-import InvestmentTabs from "./Frontend/components/Dashboard/tabs/Investments.jsx";
-import OverviewTabs from "./Frontend/components/Dashboard/tabs/Overview.jsx";
-import TransactionTabs from "./Frontend/components/Dashboard/tabs/Transactions.jsx";
+import TabsView from "./Frontend/components/Dashboard/tabs/Tabs.jsx"; // ✅ Merged Tabs.jsx
 
 import ProtectedRoute from "./Frontend/components/Auth/ProtectedRoute";
 import AdminRoute from "./Frontend/components/Auth/AdminRoute";
@@ -176,67 +173,28 @@ function App() {
             }
           />
           <Route
-  path="/loan"
-  element={
-    <ProtectedRoute>
-      <>
-        <MiniNavbar />
-        <Sidebar />
-        <LoanCalculator />
-        <Footer />
-      </>
-    </ProtectedRoute>
-  }
-/>
+            path="/loan"
+            element={
+              <ProtectedRoute>
+                <>
+                  <MiniNavbar />
+                  <Sidebar />
+                  <LoanCalculator />
+                  <Footer />
+                </>
+              </ProtectedRoute>
+            }
+          />
 
-          {/* Tabs Routes */}
+          {/* Unified Dashboard Tabs Route */}
           <Route
-            path="/dashboard/advice"
+            path="/dashboard/tabs"
             element={
               <ProtectedRoute>
                 <>
                   <MiniNavbar />
                   <Sidebar />
-                  <AdviceTabs />
-                  <Footer />
-                </>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/dashboard/investments"
-            element={
-              <ProtectedRoute>
-                <>
-                  <MiniNavbar />
-                  <Sidebar />
-                  <InvestmentTabs />
-                  <Footer />
-                </>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/dashboard/overview"
-            element={
-              <ProtectedRoute>
-                <>
-                  <MiniNavbar />
-                  <Sidebar />
-                  <OverviewTabs />
-                  <Footer />
-                </>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/dashboard/transactions"
-            element={
-              <ProtectedRoute>
-                <>
-                  <MiniNavbar />
-                  <Sidebar />
-                  <TransactionTabs />
+                  <TabsView />
                   <Footer />
                 </>
               </ProtectedRoute>
