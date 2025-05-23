@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Container, Row, Col, Tab, Card, Button } from "react-bootstrap";
 import { useAuthContext } from "../../../context/AuthContext";
+import LoanCalculator from './LoanCalculator';
 
 import Chat from "../Features/Chat";
 import Questionnaire from "../Features/Questionnaire";
@@ -178,6 +179,8 @@ const Dashboard = () => {
                   <h2 className="tab-title">Financial Questionnaire</h2>
                   <Questionnaire />
                 </Tab.Pane>
+
+
 
                 <Tab.Pane eventKey="settings">
                   <h2 className="tab-title">Account Settings</h2>

@@ -12,6 +12,8 @@ import { fileURLToPath } from "url";
 import axios from "axios";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
+import loanRoutes from './routes/loanRoutes.js';
+
 
 // 🌍 Route Imports
 import userRoutes from "./routes/userroutes.js";
@@ -122,7 +124,7 @@ app.use("/api/chat", apiLimiter, chatRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/currency", currencyRoutes); // ✅ moved after app initialization
-
+app.use('/api/loan', loanRoutes);
 // 🔄 FastAPI Proxy Configuration
 const forwardRequest = async (req, res, endpoint) => {
   try {

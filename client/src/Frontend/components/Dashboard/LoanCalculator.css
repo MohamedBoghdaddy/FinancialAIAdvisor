@@ -1,0 +1,42 @@
+.loan-calculator {
+  padding: 20px;
+  background: #f9f9f9;
+  border-radius: 12px;
+  max-width: 400px;
+  margin: auto;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.loan-calculator h2 {
+  text-align: center;
+}
+
+.loan-calculator label {
+  display: block;
+  margin-bottom: 12px;
+}
+
+.loan-calculator input {
+  width: 100%;
+  padding: 8px;
+  margin-top: 4px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
+
+.loan-calculator button {
+  width: 100%;
+  padding: 10px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.loan-calculator .result {
+  margin-top: 16px;
+  font-size: 18px;
+  text-align: center;
+  color: #333;
+}

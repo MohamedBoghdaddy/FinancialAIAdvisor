@@ -11,6 +11,8 @@ import { Modal, Button } from "react-bootstrap";
 import "../styles/Sidebar.css";
 import { useAuthContext } from "../../../context/AuthContext";
 import axios from "axios";
+import { FaCalculator } from 'react-icons/fa';
+
 
 const Sidebar = () => {
   const { state } = useAuthContext();
@@ -194,6 +196,12 @@ const Sidebar = () => {
     <FaChartLine /> Currency Converter
   </Link>
 </li>
+<li>
+  <Link to="/loan">
+    <FaCalculator /> Loan Calculator
+  </Link>
+</li>
+
       </ul>
     </div>
   );

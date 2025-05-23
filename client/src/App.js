@@ -2,6 +2,7 @@ import React from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import { AuthProvider } from "./context/AuthContext";
+import LoanCalculator from './Frontend/components/Dashboard/LoanCalculator';
 
 // Frontend Components
 import Home from "./Frontend/components/Home/home";
@@ -173,6 +174,19 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+  path="/loan"
+  element={
+    <ProtectedRoute>
+      <>
+        <MiniNavbar />
+        <Sidebar />
+        <LoanCalculator />
+        <Footer />
+      </>
+    </ProtectedRoute>
+  }
+/>
 
           {/* AI Report Page */}
           <Route path="/financial-report" element={<FinancialReportPage />} />
