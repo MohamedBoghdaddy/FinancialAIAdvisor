@@ -3,6 +3,8 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import { AuthProvider } from "./context/AuthContext";
 import LoanCalculator from './Frontend/components/Dashboard/LoanCalculator';
+import NetWorthCalculator from './Frontend/components/Dashboard/NetWorthCalculator';
+
 
 // Frontend Components
 import Home from "./Frontend/components/Home/home";
@@ -186,6 +188,17 @@ function App() {
         <Footer />
       </>
     </ProtectedRoute>
+  }
+/>
+<Route
+  path="/net-worth"
+  element={
+    <>
+      <Sidebar />
+      <div className="main-content">
+        <NetWorthCalculator />
+      </div>
+    </>
   }
 />
 
