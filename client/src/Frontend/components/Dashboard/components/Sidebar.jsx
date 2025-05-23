@@ -11,11 +11,12 @@ import {
   FaUser,
   FaCogs,
   FaCalculator,
+  FaBalanceScale,
 } from "react-icons/fa";
 import { Modal, Button } from "react-bootstrap";
 import { useAuthContext } from "../../../../context/AuthContext";
 import axios from "axios";
-import "../../styles/Sidebar.css"; // ✅ Keep your CSS here
+import "../../styles/Sidebar.css";
 
 const Sidebar = () => {
   const { state } = useAuthContext();
@@ -134,7 +135,9 @@ const Sidebar = () => {
                         max="3"
                         step="0.1"
                         value={scale}
-                        onChange={(e) => setScale(parseFloat(e.target.value))}
+                        onChange={(e) =>
+                          setScale(parseFloat(e.target.value))
+                        }
                       />
                       <Button onClick={() => setRotate((r) => r + 90)}>
                         Rotate
@@ -210,6 +213,11 @@ const Sidebar = () => {
         <li>
           <Link to="/loan">
             <FaCalculator /> Loan Calculator
+          </Link>
+        </li>
+        <li>
+          <Link to="/net-worth">
+            <FaBalanceScale /> Net Worth Calculator
           </Link>
         </li>
       </ul>

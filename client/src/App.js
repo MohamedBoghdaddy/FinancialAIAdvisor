@@ -1,8 +1,10 @@
 import React from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-
 import { AuthProvider } from "./context/AuthContext";
+
+// Tools
 import LoanCalculator from "./Frontend/components/Dashboard/tools/LoanCalculator";
+import NetWorthCalculator from "./Frontend/components/Dashboard/tools/NetWorthCalculator";
 
 // Frontend Components
 import Home from "./Frontend/components/Home/home";
@@ -26,8 +28,7 @@ import UserDetails from "./Frontend/components/Dashboard/admin/UserDetails";
 import Chatbot from "./Frontend/components/chatbot/chatbot";
 import AIChat from "./Frontend/components/chatbot/AIChat";
 import Contact from "./Frontend/components/Contact/contact";
-
-import TabsView from "./Frontend/components/Dashboard/tabs/Tabs.jsx"; // ✅ Merged Tabs.jsx
+import TabsView from "./Frontend/components/Dashboard/tabs/Tabs.jsx";
 
 import ProtectedRoute from "./Frontend/components/Auth/ProtectedRoute";
 import AdminRoute from "./Frontend/components/Auth/AdminRoute";
@@ -149,7 +150,7 @@ function App() {
             }
           />
           <Route
-            path="/Chatbot"
+            path="/chatbot"
             element={
               <>
                 <NavBar />
@@ -185,6 +186,19 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/net-worth"
+            element={
+              <ProtectedRoute>
+                <>
+                  <MiniNavbar />
+                  <Sidebar />
+                  <NetWorthCalculator />
+                  <Footer />
+                </>
+              </ProtectedRoute>
+            }
+          />
 
           {/* Unified Dashboard Tabs Route */}
           <Route
@@ -213,7 +227,7 @@ function App() {
               </AdminRoute>
             }
           />
-          <Route
+          <Routes
             path="/admin/users/:id"
             element={
               <AdminRoute>
