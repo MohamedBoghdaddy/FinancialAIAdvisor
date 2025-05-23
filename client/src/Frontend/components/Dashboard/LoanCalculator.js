@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import './LoanCalculator.css';
+import '../styles/LoanCalculator.css';
 
 const LoanCalculator = () => {
   const [amount, setAmount] = useState('');
