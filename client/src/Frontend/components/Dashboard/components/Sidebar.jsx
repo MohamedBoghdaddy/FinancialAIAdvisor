@@ -14,7 +14,12 @@ import {
 import { Modal, Button } from "react-bootstrap";
 import { useAuthContext } from "../../../../context/AuthContext";
 import axios from "axios";
+<<<<<<< HEAD:client/src/Frontend/components/Dashboard/components/Sidebar.jsx
 import "../../styles/Sidebar.css";
+=======
+import { FaCalculator } from 'react-icons/fa';
+
+>>>>>>> 89c3dc76849c943a1033ac6dec335496fc0f0cf8:client/src/Frontend/components/Dashboard/sidebar.js
 
 const Sidebar = () => {
   const { state } = useAuthContext();
@@ -204,10 +209,23 @@ const Sidebar = () => {
           </Link>
         </li>
         <li>
+<<<<<<< HEAD:client/src/Frontend/components/Dashboard/components/Sidebar.jsx
           <Link to="/currency-converter">
             <FaChartLine /> Currency Converter
           </Link>
         </li>
+=======
+  <Link to="/currency-converter">
+    <FaChartLine /> Currency Converter
+  </Link>
+</li>
+<li>
+  <Link to="/loan">
+    <FaCalculator /> Loan Calculator
+  </Link>
+</li>
+
+>>>>>>> 89c3dc76849c943a1033ac6dec335496fc0f0cf8:client/src/Frontend/components/Dashboard/sidebar.js
       </ul>
     </div>
   );

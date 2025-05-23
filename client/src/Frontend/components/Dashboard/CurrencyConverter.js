@@ -3,79 +3,108 @@ import axios from "axios";
 import "../styles/CurrencyConverter.css";
 
 
-const API_KEY = "a16a74e7732bd447e54a6c51068147e2";
-
 const CurrencyConverter = () => {
   const [amount, setAmount] = useState(1);
+  const [fromCurrency, setFromCurrency] = useState("USD");
   const [toCurrency, setToCurrency] = useState("EGP");
   const [convertedAmount, setConvertedAmount] = useState(null);
   const [currencyList, setCurrencyList] = useState([]);
 
-  // 👇 Load currency list once (symbols endpoint works even on free plan)
   useEffect(() => {
     axios
-      .get(`https://data.fixer.io/api/symbols?access_key=${API_KEY}`)
+      .get("http://localhost:4000/api/currency/symbols")
       .then((res) => {
         if (res.data.success) {
-          setCurrencyList(Object.keys(res.data.symbols));
+          setCurrencyList(res.data.symbols);
         } else {
-          console.error("Symbol fetch error", res.data.error);
+          console.error("Failed to load symbols:", res.data.error);
         }
       })
       .catch((err) => {
-        console.error("Error loading currencies", err);
+        console.error("Error loading currency list:", err);
       });
   }, []);
 
   const convertCurrency = () => {
     axios
-      .get(`https://data.fixer.io/api/latest`, {
+      .get("http://localhost:4000/api/currency/convert", {
         params: {
-          access_key: API_KEY,
-          symbols: toCurrency,
+          from: fromCurrency,
+          to: toCurrency,
+          amount: amount,
         },
       })
       .then((res) => {
-        if (res.data.success && res.data.rates[toCurrency]) {
-          const rate = res.data.rates[toCurrency];
-          setConvertedAmount(rate * amount);
+        if (res.data.success) {
+          setConvertedAmount(res.data.result);
         } else {
           alert("Conversion failed. Try again.");
         }
       })
       .catch((err) => {
-        console.error("Conversion error", err);
+        console.error("Conversion error:", err);
+        alert("Conversion error. Check console.");
       });
   };
 
   return (
-    <div className="currency-converter">
+    <div className="currency-converter" style={{ maxWidth: "500px", margin: "auto" }}>
       <h2>💱 Currency Converter</h2>
-      <div>
+
+      <div style={{ marginBottom: "1rem" }}>
+        <label>Amount:</label>
         <input
           type="number"
           value={amount}
-          min="1"
+          min="0"
           onChange={(e) => setAmount(e.target.value)}
+          style={{ width: "100%", padding: "8px", marginBottom: "10px" }}
         />
-        <span> EUR → </span>
+
+        <label>From Currency:</label>
         <select
-          value={toCurrency}
-          onChange={(e) => setToCurrency(e.target.value)}
+          value={fromCurrency}
+          onChange={(e) => setFromCurrency(e.target.value)}
+          style={{ width: "100%", padding: "8px", marginBottom: "10px" }}
         >
-          {currencyList.map((code) => (
+          {currencyList.map(({ code, description }) => (
             <option key={code} value={code}>
-              {code}
+              {code} - {description}
             </option>
           ))}
         </select>
-        <button onClick={convertCurrency}>Convert</button>
+
+        <label>To Currency:</label>
+        <select
+          value={toCurrency}
+          onChange={(e) => setToCurrency(e.target.value)}
+          style={{ width: "100%", padding: "8px", marginBottom: "10px" }}
+        >
+          {currencyList.map(({ code, description }) => (
+            <option key={code} value={code}>
+              {code} - {description}
+            </option>
+          ))}
+        </select>
+
+        <button
+          onClick={convertCurrency}
+          style={{
+            marginTop: "12px",
+            padding: "10px 20px",
+            backgroundColor: "#007bff",
+            color: "white",
+            border: "none",
+            cursor: "pointer",
+          }}
+        >
+          Convert
+        </button>
       </div>
 
-      {convertedAmount !== null && (
+      {convertedAmount && (
         <p>
-          {amount} EUR = <strong>{convertedAmount.toFixed(2)}</strong>{" "}
-          {toCurrency}
+          <strong>Result:</strong> {convertedAmount}
         </p>
       )}
     </div>
