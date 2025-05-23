@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Container, Row, Col, Tab, Card, Button } from "react-bootstrap";
 import { useAuthContext } from "../../../context/AuthContext";
 import LoanCalculator from './LoanCalculator';
+import adviceList from './adviceList';
 
 import Chat from "../Features/Chat";
 import Questionnaire from "../Features/Questionnaire";
@@ -18,37 +19,20 @@ import { dashboardData } from "./dashboardData";
 const Dashboard = () => {
   const { state } = useAuthContext();
   const { user } = state;
+
   const [activeTab, setActiveTab] = useState("overview");
   const [showAiAdvice, setShowAiAdvice] = useState(false);
-  const [aiAdvice, setAiAdvice] = useState("");
+  const [aiAdvice, setAiAdvice] = useState(""); // ✅ Always initialized as empty string
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleGetAiAdvice = async () => {
+  const handleGetAiAdvice = () => {
     setIsLoading(true);
-    try {
-      const response = await new Promise((resolve) =>
-        setTimeout(
-          () =>
-            resolve({
-              advice:
-                "Based on your current financial situation:\n\n" +
-                "1. Increase emergency fund to 6 months of expenses\n" +
-                "2. Diversify your investment portfolio\n" +
-                "3. Review tax-advantaged retirement accounts\n" +
-                "4. Audit monthly subscriptions",
-            }),
-          1500
-        )
-      );
-      setAiAdvice(response.advice);
+    setTimeout(() => {
+      const randomIndex = Math.floor(Math.random() * adviceList.length);
+      setAiAdvice(adviceList[randomIndex] || "No advice available."); // ✅ Safe fallback
       setShowAiAdvice(true);
-    } catch (error) {
-      console.error("Error getting AI advice:", error);
-      setAiAdvice("Failed to generate advice. Please try again.");
-      setShowAiAdvice(true);
-    } finally {
       setIsLoading(false);
-    }
+    }, 1000);
   };
 
   return (
@@ -62,14 +46,13 @@ const Dashboard = () => {
       <AIAdviceModal
         show={showAiAdvice}
         onHide={() => setShowAiAdvice(false)}
-        aiAdvice={aiAdvice}
+        aiAdvice={aiAdvice || ""} // ✅ Always pass a string
       />
 
       <Container className="dashboard-content">
         <Tab.Container activeKey={activeTab} onSelect={setActiveTab}>
           <Row>
             <DashboardSidebar setActiveTab={setActiveTab} />
-
             <Col lg={9} md={8}>
               <Tab.Content>
                 <Tab.Pane eventKey="overview">
@@ -86,14 +69,9 @@ const Dashboard = () => {
                     <Card.Body>
                       <div className="transaction-list">
                         {dashboardData.recentTransactions.map((transaction) => (
-                          <div
-                            key={transaction.id}
-                            className="transaction-item"
-                          >
+                          <div key={transaction.id} className="transaction-item">
                             <div className="transaction-info">
-                              <div className="transaction-date">
-                                {transaction.date}
-                              </div>
+                              <div className="transaction-date">{transaction.date}</div>
                               <div className="transaction-description">
                                 {transaction.description}
                                 <span className="transaction-category">
@@ -102,9 +80,7 @@ const Dashboard = () => {
                               </div>
                             </div>
                             <div
-                              className={`transaction-amount ${
-                                transaction.amount > 0 ? "positive" : "negative"
-                              }`}
+                              className={`transaction-amount ${transaction.amount > 0 ? "positive" : "negative"}`}
                             >
                               {transaction.amount > 0 ? "+" : ""}
                               {transaction.amount.toLocaleString("en-US", {
@@ -121,9 +97,7 @@ const Dashboard = () => {
 
                 <Tab.Pane eventKey="goals">
                   <h2 className="tab-title">Financial Goals</h2>
-                  <p>
-                    This section will display your financial goals and progress.
-                  </p>
+                  <p>This section will display your financial goals and progress.</p>
                 </Tab.Pane>
 
                 <Tab.Pane eventKey="advice">
@@ -134,29 +108,27 @@ const Dashboard = () => {
                         <Card.Body>
                           <h5>Get Personalized Financial Advice</h5>
                           <p className="mb-4">
-                            Our AI analyzes your financial data and provides
-                            personalized recommendations to help you achieve
-                            your financial goals.
+                            Our AI analyzes your financial data and provides personalized
+                            recommendations to help you achieve your financial goals.
                           </p>
                           <Button
                             variant="primary"
                             onClick={handleGetAiAdvice}
                             disabled={isLoading}
                           >
-                            {isLoading
-                              ? "Generating Advice..."
-                              : "Get AI Advice"}
+                            {isLoading ? "Generating Advice..." : "Get AI Advice"}
                           </Button>
                         </Card.Body>
                       </Card>
                     </Col>
+
                     <Col lg={6} className="mb-4">
                       <Card className="dashboard-card">
                         <Card.Body>
                           <h5>Financial Questionnaire</h5>
                           <p className="mb-4">
-                            Complete our questionnaire to help us better
-                            understand your financial situation and goals.
+                            Complete our questionnaire to help us better understand your
+                            financial situation and goals.
                           </p>
                           <Button
                             variant="outline-primary"
@@ -180,13 +152,9 @@ const Dashboard = () => {
                   <Questionnaire />
                 </Tab.Pane>
 
-
-
                 <Tab.Pane eventKey="settings">
                   <h2 className="tab-title">Account Settings</h2>
-                  <p>
-                    This section will allow you to manage your account settings.
-                  </p>
+                  <p>This section will allow you to manage your account settings.</p>
                 </Tab.Pane>
               </Tab.Content>
             </Col>
