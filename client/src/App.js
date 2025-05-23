@@ -11,21 +11,25 @@ import MiniNavbar from "./Frontend/components/Home/Mininavbar";
 
 import Login from "./Frontend/components/LOGIN&REGISTRATION/Login/Login";
 import Signup from "./Frontend/components/LOGIN&REGISTRATION/Signup/Signup";
+import Dashboard from "./Frontend/components/Dashboard/pages/MainDashboard";
 
-import Dashboard from "./Frontend/components/Dashboard/Dashboard";
-import Sidebar from "./Frontend/components/Dashboard/sidebar";
-import Settings from "./Frontend/components/Dashboard/settings";
-import Profile from "./Frontend/components/Dashboard/profile";
+import Sidebar from "./Frontend/components/Dashboard/components/Sidebar.jsx";
+import Settings from "./Frontend/components/Dashboard/pages/Settings.jsx";
+import Profile from "./Frontend/components/Dashboard/pages/Profile.jsx";
 import AnalyticsReport from "./Frontend/components/Dashboard/analytics";
-import FinancialReportPage from "./Frontend/components/Dashboard/FinancialReportPage";
+import FinancialReportPage from "./Frontend/components/Dashboard/pages/FinancialReport";
 import CurrencyConverter from "./Frontend/components/Dashboard/CurrencyConverter";
-import Questionnaire from "./Frontend/components/Dashboard/Questionnaire";
 import AdminDashboard from "./Frontend/components/Dashboard/AdminDashboard";
 import UserDetails from "./Frontend/components/Dashboard/UserDetails";
 
 import Chatbot from "./Frontend/components/chatbot/chatbot";
 import AIChat from "./Frontend/components/chatbot/AIChat";
 import Contact from "./Frontend/components/Contact/contact";
+
+import AdviceTabs from "./Frontend/components/Dashboard/tabs/Advice.jsx";
+import InvestmentTabs from "./Frontend/components/Dashboard/tabs/Investments.jsx";
+import OverviewTabs from "./Frontend/components/Dashboard/tabs/Overview.jsx";
+import TransactionTabs from "./Frontend/components/Dashboard/tabs/Transactions.jsx";
 
 import ProtectedRoute from "./Frontend/components/Auth/ProtectedRoute";
 import AdminRoute from "./Frontend/components/Auth/AdminRoute";
@@ -75,7 +79,6 @@ function App() {
               <ProtectedRoute>
                 <>
                   <MiniNavbar />
-                  <Sidebar />
                   <Dashboard />
                   <Footer />
                 </>
@@ -148,16 +151,14 @@ function App() {
             }
           />
           <Route
-            path="/questionnaire"
+            path="/Chatbot"
             element={
-              <ProtectedRoute>
-                <>
-                  <MiniNavbar />
-                  <Sidebar />
-                  <Questionnaire />
-                  <Footer />
-                </>
-              </ProtectedRoute>
+              <>
+                <NavBar />
+                <Sidebar />
+                <Chatbot />
+                <Footer />
+              </>
             }
           />
           <Route
@@ -168,6 +169,60 @@ function App() {
                   <MiniNavbar />
                   <Sidebar />
                   <CurrencyConverter />
+                  <Footer />
+                </>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Tabs Routes */}
+          <Route
+            path="/dashboard/advice"
+            element={
+              <ProtectedRoute>
+                <>
+                  <MiniNavbar />
+                  <Sidebar />
+                  <AdviceTabs />
+                  <Footer />
+                </>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/investments"
+            element={
+              <ProtectedRoute>
+                <>
+                  <MiniNavbar />
+                  <Sidebar />
+                  <InvestmentTabs />
+                  <Footer />
+                </>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/overview"
+            element={
+              <ProtectedRoute>
+                <>
+                  <MiniNavbar />
+                  <Sidebar />
+                  <OverviewTabs />
+                  <Footer />
+                </>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/transactions"
+            element={
+              <ProtectedRoute>
+                <>
+                  <MiniNavbar />
+                  <Sidebar />
+                  <TransactionTabs />
                   <Footer />
                 </>
               </ProtectedRoute>

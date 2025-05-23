@@ -1,21 +1,29 @@
 {
   "files": {
-    "main.css": "/static/css/main.f99fb47f.css",
-    "main.js": "/static/js/main.fdab0f0d.js",
+    "main.css": "/static/css/main.46dcd891.css",
+    "main.js": "/static/js/main.6875c37f.js",
     "static/js/453.a898df8b.chunk.js": "/static/js/453.a898df8b.chunk.js",
+    "static/media/hero.jpg": "/static/media/hero.4e79efda5e1ab47a895f.jpg",
+    "static/media/mission.jpg": "/static/media/mission.0c10e0f75e7618fc740d.jpg",
+    "static/media/about.png": "/static/media/about.aa09ffd32e467900b73b.png",
+    "static/media/latest_logo.png": "/static/media/latest_logo.9f837210ca7fee805931.png",
+    "static/media/Urbanist-Regular.ttf": "/static/media/Urbanist-Regular.64ab880a68030133bbf7.ttf",
+    "static/media/Urbanist-Bold.ttf": "/static/media/Urbanist-Bold.28937b70005aac17035d.ttf",
     "static/media/icons8-meta-96.svg": "/static/media/icons8-meta-96.2d23ef3978d6281df7880aacc06bc6b3.svg",
     "static/media/icons8-amazon-100.svg": "/static/media/icons8-amazon-100.dc661a81dfd651547cb782810c64c6ed.svg",
     "static/media/icons8-netflix-80.svg": "/static/media/icons8-netflix-80.a2b34bec46f1718214472fad7eb2d2e6.svg",
     "static/media/icons8-apple-inc-100.svg": "/static/media/icons8-apple-inc-100.f918efbe76b445480beee16bc37814a1.svg",
     "static/media/icons8-google-96.svg": "/static/media/icons8-google-96.66fbdb95b0fb6d825d325f735b935552.svg",
+    "static/media/eye-off.svg": "/static/media/eye-off.efa151ff94423acaa9cfc004565b98d0.svg",
     "index.html": "/index.html",
+    "static/media/eye.svg": "/static/media/eye.a44d779feb2d028ba7efa391a5171c63.svg",
     "static/media/icons8-tesla-96.svg": "/static/media/icons8-tesla-96.b791b7832a51284bc1d0572e059483f3.svg",
-    "main.f99fb47f.css.map": "/static/css/main.f99fb47f.css.map",
-    "main.fdab0f0d.js.map": "/static/js/main.fdab0f0d.js.map",
+    "main.46dcd891.css.map": "/static/css/main.46dcd891.css.map",
+    "main.6875c37f.js.map": "/static/js/main.6875c37f.js.map",
     "453.a898df8b.chunk.js.map": "/static/js/453.a898df8b.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.f99fb47f.css",
-    "static/js/main.fdab0f0d.js"
+    "static/css/main.46dcd891.css",
+    "static/js/main.6875c37f.js"
   ]
 }

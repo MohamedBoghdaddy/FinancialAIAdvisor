@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import "../styles/CurrencyConverter.css";
+
 
 const API_KEY = "a16a74e7732bd447e54a6c51068147e2";
 
