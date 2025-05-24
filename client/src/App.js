@@ -4,7 +4,7 @@ import { AuthProvider } from "./context/AuthContext";
 
 // Tools
 import LoanCalculator from "./Frontend/components/Dashboard/tools/LoanCalculator";
-import NetWorthCalculator from "./Frontend/components/Dashboard/tools/NetWorthCalculator";
+import NetWorthCalculator from "./Frontend/components/Dashboard/NetWorthCalculator";
 
 // Frontend Components
 import Home from "./Frontend/components/Home/home";
@@ -38,7 +38,7 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          {/* Home Page */}
+          {/* Public Routes */}
           <Route
             path="/"
             element={
@@ -50,8 +50,6 @@ function App() {
               </>
             }
           />
-
-          {/* Auth Pages */}
           <Route
             path="/login"
             element={
@@ -71,7 +69,7 @@ function App() {
             }
           />
 
-          {/* Protected User Routes */}
+          {/* Protected Routes */}
           <Route
             path="/dashboard"
             element={
@@ -199,8 +197,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-
-          {/* Unified Dashboard Tabs Route */}
           <Route
             path="/dashboard/tabs"
             element={
@@ -214,9 +210,19 @@ function App() {
               </ProtectedRoute>
             }
           />
-
-          {/* AI Report Page */}
-          <Route path="/financial-report" element={<FinancialReportPage />} />
+          <Route
+            path="/financial-report"
+            element={
+              <ProtectedRoute>
+                <>
+                  <MiniNavbar />
+                  <Sidebar />
+                  <FinancialReportPage />
+                  <Footer />
+                </>
+              </ProtectedRoute>
+            }
+          />
 
           {/* Admin Routes */}
           <Route
@@ -227,7 +233,7 @@ function App() {
               </AdminRoute>
             }
           />
-          <Routes
+          <Route
             path="/admin/users/:id"
             element={
               <AdminRoute>
