@@ -153,43 +153,57 @@ export const DashboardProvider = ({ children }) => {
     return message;
   }, []);
 
-  const fetchProfile = useCallback(() => {
-    if (!token) {
-      dispatch({ type: "FETCH_ERROR", payload: "Authentication required" });
-      return Promise.resolve();
-    }
+ const fetchProfile = useCallback(() => {
+  if (!token) {
+    dispatch({ type: "FETCH_ERROR", payload: "Authentication required" });
+    return Promise.resolve();
+  }
 
-    dispatch({ type: "FETCH_START", payload: "profile" });
-    const controller = new AbortController();
+  dispatch({ type: "FETCH_START", payload: "profile" });
+  const controller = new AbortController();
 
-    const fetchData = async () => {
-      try {
-        const res = await axios.get(`${API_URL}/api/profile/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-          timeout: 10000,
-          signal: controller.signal,
-        });
+  const fetchData = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/api/profile/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        timeout: 10000,
+        signal: controller.signal,
+      });
 
-        console.log("✅ Profile fetched:", res.data); // debug
-        dispatch({ type: "FETCH_PROFILE_SUCCESS", payload: res.data.data });
-      } catch (err) {
-        if (axios.isCancel(err)) return;
+      // ✅ Extract the actual profile object from the response
+      const profile = res.data?.data;
 
-        let errorMessage = "Failed to load profile";
-        if (err.code === "ERR_NETWORK") {
-          errorMessage = "Network error. Please check your connection.";
-        } else if (err.response?.status === 401) {
-          localStorage.removeItem("token");
-          localStorage.removeItem("user");
-          errorMessage = "Session expired. Please login again.";
-        }
-        dispatch({ type: "FETCH_ERROR", payload: errorMessage });
+      if (!profile) {
+        throw new Error("No profile data returned from backend");
       }
-    };
 
-    fetchData();
-    return () => controller.abort();
-  }, [token]);
+      // ✅ Log the clean profile data (not the entire wrapper)
+      console.log("✅ Clean profile fetched:", profile);
+
+      // ✅ Dispatch the correct profile to state
+      dispatch({ type: "FETCH_PROFILE_SUCCESS", payload: profile });
+    } catch (err) {
+      if (axios.isCancel(err)) return;
+
+      let errorMessage = "Failed to load profile";
+      if (err.code === "ERR_NETWORK") {
+        errorMessage = "Network error. Please check your connection.";
+      } else if (err.response?.status === 401) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        errorMessage = "Session expired. Please login again.";
+      }
+
+      console.error("❌ Profile fetch error:", err);
+      dispatch({ type: "FETCH_ERROR", payload: errorMessage });
+    }
+  };
+
+  fetchData();
+  return () => controller.abort();
+}, [token]);
 
   const submitProfile = useCallback(
     async (profileData) => {

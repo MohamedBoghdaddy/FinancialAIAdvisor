@@ -5,6 +5,7 @@ import { AuthProvider } from "./context/AuthContext";
 // Tools
 import LoanCalculator from "./Frontend/components/Dashboard/tools/LoanCalculator";
 import NetWorthCalculator from "./Frontend/components/Dashboard/NetWorthCalculator";
+import ProfileCardPage from "./Frontend/components/Dashboard/pages/ProfileCardPage";
 
 // Frontend Components
 import Home from "./Frontend/components/Home/home";
@@ -241,7 +242,24 @@ function App() {
               </AdminRoute>
             }
           />
+            <Route
+            path="/profile-card"
+            element={
+              <ProtectedRoute>
+                <>
+                  <MiniNavbar />
+                  <Sidebar />
+                  <ProfileCardPage />
+                  <Footer />
+                </>
+              </ProtectedRoute>
+            }
+          />
+        
+            
         </Routes>
+     
+
       </BrowserRouter>
     </AuthProvider>
   );
