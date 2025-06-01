@@ -238,7 +238,7 @@ function App() {
         <MiniNavbar />
         <Sidebar />
         <CalendarExpenseTracker />
-        <Footer />
+  
       </>
     </ProtectedRoute>
   }
