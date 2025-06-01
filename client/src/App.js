@@ -6,6 +6,7 @@ import { AuthProvider } from "./context/AuthContext";
 import LoanCalculator from "./Frontend/components/Dashboard/tools/LoanCalculator";
 import NetWorthCalculator from "./Frontend/components/Dashboard/NetWorthCalculator";
 import ProfileCardPage from "./Frontend/components/Dashboard/pages/ProfileCardPage";
+import CalendarExpenseTracker from "./Frontend/components/Dashboard/pages/CalendarExpenseTracker";
 
 // Frontend Components
 import Home from "./Frontend/components/Home/home";
@@ -255,7 +256,20 @@ function App() {
               </ProtectedRoute>
             }
           />
-        
+        <Route
+  path="/expenses"
+  element={
+    <ProtectedRoute>
+      <>
+        <MiniNavbar />
+        <Sidebar />
+        <CalendarExpenseTracker />
+        <Footer />
+      </>
+    </ProtectedRoute>
+  }
+/>
+
             
         </Routes>
      

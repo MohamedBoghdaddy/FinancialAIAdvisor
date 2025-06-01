@@ -1,21 +1,12 @@
-// src/context/AuthContext.js
+// ✅ AuthContext.js (ensure token loads user before app renders)
 import React, {
-  createContext,
-  useReducer,
-  useEffect,
-  useCallback,
-  useContext,
-  useMemo,
+  createContext, useReducer, useEffect,
+  useCallback, useContext, useMemo
 } from "react";
 import axios from "axios";
 import Cookies from "js-cookie";
 
-const API_URL =
-  process.env.REACT_APP_API_URL ??
-  (window.location.hostname === "localhost"
-    ? "http://localhost:4000"
-    : "https://financial-ai-backend-kr2s.onrender.com");
-
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:4000";
 const AuthContext = createContext();
 
 const initialState = {
@@ -28,12 +19,7 @@ const authReducer = (state, action) => {
   switch (action.type) {
     case "LOGIN_SUCCESS":
     case "USER_LOADED":
-      return {
-        ...state,
-        user: action.payload,
-        isAuthenticated: true,
-        loading: false,
-      };
+      return { ...state, user: action.payload, isAuthenticated: true, loading: false };
     case "LOGOUT_SUCCESS":
     case "AUTH_ERROR":
       return { ...state, user: null, isAuthenticated: false, loading: false };
@@ -67,72 +53,47 @@ export const AuthProvider = ({ children }) => {
   const checkAuth = useCallback(async () => {
     try {
       const token = getToken();
-      if (!token) {
-        dispatch({ type: "AUTH_ERROR" });
-        return;
-      }
-
+      if (!token) return dispatch({ type: "AUTH_ERROR" });
       setAuthHeaders(token);
 
-      const response = await axios.get(`${API_URL}/api/users/checkAuth`, {
+      const res = await axios.get(`${API_URL}/api/users/checkAuth`, {
         withCredentials: true,
       });
 
-      if (response.data?.user) {
-        const userData = { user: response.data.user, token };
+      if (res.data?.user) {
+        const userData = { user: res.data.user, token };
         localStorage.setItem("user", JSON.stringify(userData));
-        Cookies.set("token", token, { expires: 7, secure: true });
-
-        dispatch({ type: "USER_LOADED", payload: response.data.user });
+        Cookies.set("token", token, { expires: 7 });
+        dispatch({ type: "USER_LOADED", payload: res.data.user });
+      } else {
+        dispatch({ type: "AUTH_ERROR" });
       }
-    } catch (error) {
-      console.error("Auth check failed:", error.message);
+    } catch (err) {
       clearAuthStorage();
       dispatch({ type: "AUTH_ERROR" });
     }
   }, []);
 
   useEffect(() => {
-    const initializeAuth = async () => {
-      const storedUser = localStorage.getItem("user");
-      const token = getToken();
-
-      if (storedUser && token) {
-        try {
-          const parsedUser = JSON.parse(storedUser);
-          setAuthHeaders(token);
-          dispatch({ type: "LOGIN_SUCCESS", payload: parsedUser.user });
-        } catch (error) {
-          console.error("Error parsing stored user:", error);
-          clearAuthStorage();
-        }
+    const storedUser = localStorage.getItem("user");
+    const token = getToken();
+    if (storedUser && token) {
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        setAuthHeaders(token);
+        dispatch({ type: "LOGIN_SUCCESS", payload: parsedUser.user });
+      } catch {
+        clearAuthStorage();
       }
-
-      await checkAuth();
-    };
-
-    initializeAuth();
+    }
+    checkAuth();
   }, [checkAuth]);
 
-  const logout = useCallback(() => {
-    clearAuthStorage();
-    dispatch({ type: "LOGOUT_SUCCESS" });
-  }, []);
-
-  const contextValue = useMemo(
-    () => ({ state, dispatch, logout, setAuthHeaders, checkAuth }),
-    [state, logout, checkAuth]
-  );
-
   return (
-    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ state, dispatch, checkAuth }}>
+      {children}
+    </AuthContext.Provider>
   );
 };
 
-export const useAuthContext = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuthContext must be used within an AuthProvider");
-  }
-  return context;
-};
+export const useAuthContext = () => useContext(AuthContext);

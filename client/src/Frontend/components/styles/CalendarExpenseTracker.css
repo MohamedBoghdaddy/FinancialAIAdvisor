@@ -1,0 +1,47 @@
+.calendar-expense-container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+  border-radius: 12px;
+  background: #f4f4f4;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.expense-form form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.expense-form input,
+.expense-form button,
+.calendar-expense-container input[type="date"] {
+  padding: 8px;
+  font-size: 16px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.expense-form button {
+  background-color: #007bff;
+  color: white;
+  cursor: pointer;
+  border: none;
+}
+
+.expense-form button:hover {
+  background-color: #0056b3;
+}
+
+.expense-list ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+.expense-list li {
+  background: white;
+  padding: 8px;
+  margin-bottom: 6px;
+  border-radius: 6px;
+  border-left: 4px solid #007bff;
+}

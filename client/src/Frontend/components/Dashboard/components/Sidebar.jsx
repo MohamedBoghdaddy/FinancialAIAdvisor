@@ -228,6 +228,13 @@ const Sidebar = () => {
       View Profile
     </Link>
   </li>
+  <li>
+  <Link to="/expenses">
+    <i className="sidebar-icon">💸</i>
+    Expense Tracker
+  </Link>
+</li>
+
       </ul>
     </div>
   );
