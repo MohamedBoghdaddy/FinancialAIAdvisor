@@ -340,34 +340,31 @@ const Profile = () => {
       <h2>📋 My Financial Profile</h2>
       <div className="profile-card">
         <BsPersonCircle className="profile-icon" />
-        {editMode ? (
-          <QuestionFlow
-            step={step}
-            questions={questions}
-            formData={formData}
-            validationErrors={validationErrors}
-            handleBack={handleBack}
-            handleNext={handleNext}
-            handleSubmit={handleSubmit}
-            submitting={submitting}
-            updateCustomExpense={updateCustomExpense}
-            removeCustomExpense={removeCustomExpense}
-            addCustomExpense={addCustomExpense}
-            renderQuestionInput={renderQuestionInput}
-          />
-        ) : (
-          <ProfileView
-            formData={formData}
-            questions={questions}
-            aiAdvice={aiAdvice}
-            goalPlan={goalPlan}
-            onEditAll={() => {
-              setEditMode(true);
-              setStep(0);
-            }}
-            onEditSpecific={setStep}
-          />
-        )}
+     {editMode ? (
+  <QuestionFlow
+    step={step}
+    questions={questions}
+    formData={formData}
+    validationErrors={validationErrors}
+    handleBack={handleBack}
+    handleNext={handleNext}
+    handleSubmit={handleSubmit}
+    submitting={submitting}
+    updateCustomExpense={updateCustomExpense}
+    removeCustomExpense={removeCustomExpense}
+    addCustomExpense={addCustomExpense}
+    renderQuestionInput={renderQuestionInput}
+  />
+) : (
+  <div className="submitted-success-message">
+    <h3>✅ Profile Saved Successfully!</h3>
+    <p>
+      You can now view your full profile details from the{" "}
+      <strong>“View Profile”</strong> page.
+    </p>
+  </div>
+)}
+
       </div>
     </div>
   );
