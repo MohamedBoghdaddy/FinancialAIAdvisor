@@ -212,16 +212,8 @@ const Sidebar = () => {
             <FaChartLine /> Currency Converter
           </Link>
         </li>
-        <li>
-          <Link to="/loan">
-            <FaCalculator /> Loan Calculator
-          </Link>
-        </li>
-        <li>
-          <Link to="/net-worth">
-            <FaBalanceScale /> Net Worth Calculator
-          </Link>
-        </li>
+        
+        
           <li>
     <Link to="/profile-card">
       <BsPersonLinesFill className="sidebar-icon" />
@@ -232,6 +224,12 @@ const Sidebar = () => {
   <Link to="/expenses">
     <i className="sidebar-icon">💸</i>
     Expense Tracker
+  </Link>
+</li>
+<li>
+  <Link to="/finance">
+    <i className="sidebar-icon">📊</i>
+    Finance Tools
   </Link>
 </li>
 

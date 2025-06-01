@@ -3,11 +3,10 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 
 // Tools
-import LoanCalculator from "./Frontend/components/Dashboard/tools/LoanCalculator";
-import NetWorthCalculator from "./Frontend/components/Dashboard/NetWorthCalculator";
+
 import ProfileCardPage from "./Frontend/components/Dashboard/pages/ProfileCardPage";
 import CalendarExpenseTracker from "./Frontend/components/Dashboard/pages/CalendarExpenseTracker";
-
+import FinanceTools from "./Frontend/components/Dashboard/tools/FinanceTools";
 // Frontend Components
 import Home from "./Frontend/components/Home/home";
 import NavBar from "./Frontend/components/Home/Navbar";
@@ -173,32 +172,7 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/loan"
-            element={
-              <ProtectedRoute>
-                <>
-                  <MiniNavbar />
-                  <Sidebar />
-                  <LoanCalculator />
-                  <Footer />
-                </>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/net-worth"
-            element={
-              <ProtectedRoute>
-                <>
-                  <MiniNavbar />
-                  <Sidebar />
-                  <NetWorthCalculator />
-                  <Footer />
-                </>
-              </ProtectedRoute>
-            }
-          />
+         
           <Route
             path="/dashboard/tabs"
             element={
@@ -270,7 +244,19 @@ function App() {
   }
 />
 
-            
+              <Route
+  path="/finance"
+  element={
+    <ProtectedRoute>
+      <>
+        <MiniNavbar />
+        <Sidebar />
+       <FinanceTools />
+        <Footer />
+      </>
+    </ProtectedRoute>
+  }
+/>
         </Routes>
      
 
