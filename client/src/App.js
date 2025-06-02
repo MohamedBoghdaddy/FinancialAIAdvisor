@@ -5,8 +5,10 @@ import { AuthProvider } from "./context/AuthContext";
 // Tools
 import LoanCalculator from "./Frontend/components/Dashboard/tools/LoanCalculator";
 import NetWorthCalculator from "./Frontend/components/Dashboard/tools/NetWorthCalculator";
-import CurrencyConverter from "./Frontend/components/Dashboard/tools/CurrencyConverter";
 
+import ProfileCardPage from "./Frontend/components/Dashboard/pages/ProfileCardPage";
+import CalendarExpenseTracker from "./Frontend/components/Dashboard/pages/CalendarExpenseTracker";
+import FinanceTools from "./Frontend/components/Dashboard/tools/FinanceTools";
 // Frontend Components
 import Home from "./Frontend/components/Home/home";
 import NavBar from "./Frontend/components/Home/Navbar";
@@ -38,7 +40,7 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          {/* Home Page */}
+          {/* Public Routes */}
           <Route
             path="/"
             element={
@@ -50,8 +52,6 @@ function App() {
               </>
             }
           />
-
-          {/* Auth Pages */}
           <Route
             path="/login"
             element={
@@ -71,7 +71,7 @@ function App() {
             }
           />
 
-          {/* Protected User Routes */}
+          {/* Protected Routes */}
           <Route
             path="/dashboard"
             element={
@@ -173,34 +173,7 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/loan"
-            element={
-              <ProtectedRoute>
-                <>
-                  <MiniNavbar />
-                  <Sidebar />
-                  <LoanCalculator />
-                  <Footer />
-                </>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/net-worth"
-            element={
-              <ProtectedRoute>
-                <>
-                  <MiniNavbar />
-                  <Sidebar />
-                  <NetWorthCalculator />
-                  <Footer />
-                </>
-              </ProtectedRoute>
-            }
-          />
-
-          {/* Unified Dashboard Tabs Route */}
+         
           <Route
             path="/dashboard/tabs"
             element={
@@ -214,9 +187,19 @@ function App() {
               </ProtectedRoute>
             }
           />
-
-          {/* AI Report Page */}
-          <Route path="/financial-report" element={<FinancialReportPage />} />
+          <Route
+            path="/financial-report"
+            element={
+              <ProtectedRoute>
+                <>
+                  <MiniNavbar />
+                  <Sidebar />
+                  <FinancialReportPage />
+                  <Footer />
+                </>
+              </ProtectedRoute>
+            }
+          />
 
           {/* Admin Routes */}
           <Route
@@ -235,7 +218,49 @@ function App() {
               </AdminRoute>
             }
           />
+            <Route
+            path="/profile-card"
+            element={
+              <ProtectedRoute>
+                <>
+                  <MiniNavbar />
+                  <Sidebar />
+                  <ProfileCardPage />
+                  <Footer />
+                </>
+              </ProtectedRoute>
+            }
+          />
+        <Route
+  path="/expenses"
+  element={
+    <ProtectedRoute>
+      <>
+        <MiniNavbar />
+        <Sidebar />
+        <CalendarExpenseTracker />
+  
+      </>
+    </ProtectedRoute>
+  }
+/>
+
+              <Route
+  path="/finance"
+  element={
+    <ProtectedRoute>
+      <>
+        <MiniNavbar />
+        <Sidebar />
+       <FinanceTools />
+        <Footer />
+      </>
+    </ProtectedRoute>
+  }
+/>
         </Routes>
+     
+
       </BrowserRouter>
     </AuthProvider>
   );

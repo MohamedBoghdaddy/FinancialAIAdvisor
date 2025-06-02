@@ -4,15 +4,6 @@ import { useAuthContext } from "../../../../context/AuthContext";
 import { DashboardContext } from "../../../../context/DashboardContext";
 import { BsPersonCircle } from "react-icons/bs";
 import { toast } from "react-toastify";
-import html2pdf from "html2pdf.js";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
 import "../../styles/Profile.css";
 
 const questions = [
@@ -128,32 +119,25 @@ const Profile = () => {
   const { state: authState } = useAuthContext();
   const { user } = authState || {};
   const {
-    state: dashState = { profile: null },
-    actions: { submitProfile, fetchProfile, requestPhi2Advice, deleteProfile },
+    state: dashState = {},
+    actions: { submitProfile, fetchProfile } = {},
     loading: { profile: profileLoading } = {},
-    aiAdvice,
-    goalPlan,
-    marketData,
+    aiAdvice = null,
+    goalPlan = null,
   } = useContext(DashboardContext);
 
   const [formData, setFormData] = useState({});
   const [step, setStep] = useState(0);
-  const [editMode, setEditMode] = useState(false);
-  const [bulkEdit, setBulkEdit] = useState(false);
-  const [singleEditIndex, setSingleEditIndex] = useState(null);
+  const [editMode, setEditMode] = useState(true); // Changed to true to show questions first
   const [validationErrors, setValidationErrors] = useState({});
   const [localLoading, setLocalLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [completionPercent, setCompletionPercent] = useState(0);
 
-  // Custom expenses management
+  // Custom expense handlers
   const addCustomExpense = useCallback(() => {
     setFormData((prev) => ({
       ...prev,
-      customExpenses: [
-        ...(prev.customExpenses || []),
-        { name: "", amount: "" },
-      ],
+      customExpenses: [...(prev.customExpenses || []), { name: "", amount: "" }],
     }));
   }, []);
 
@@ -175,7 +159,6 @@ const Profile = () => {
   const validateField = useCallback((id, value) => {
     const question = questions.find((q) => q.id === id);
     if (!question) return "";
-
     if (question.type === "number") {
       const numValue = Number(value);
       if (value === "") return "This field is required";
@@ -185,26 +168,8 @@ const Profile = () => {
         return `Maximum value is ${question.max}`;
     }
     if (question.type === "select" && !value) return "Please select an option";
-    if (id === "customExpenses") {
-      const invalidExpenses = value.filter((e) => !e.name || !e.amount);
-      if (invalidExpenses.length > 0) return "Please fill all expense fields";
-    }
     return "";
   }, []);
-
-  const calculateCompletion = useCallback(() => {
-    const filled = Object.keys(formData).filter(
-      (k) =>
-        formData[k] !== "" &&
-        formData[k] !== undefined &&
-        !Array.isArray(formData[k])
-    );
-    const expenseCount = (formData.customExpenses || []).filter(
-      (e) => e.name && e.amount
-    ).length;
-    const totalFields = questions.length + expenseCount;
-    setCompletionPercent(Math.round((filled.length / questions.length) * 100));
-  }, [formData]);
 
   const handleChange = useCallback(
     (id, value) => {
@@ -241,12 +206,12 @@ const Profile = () => {
               <select
                 value={value}
                 onChange={(e) => handleChange(question.id, e.target.value)}
-                className="select-field"
+                className="input-field"
               >
                 <option value="">Select an option</option>
-                {question.options.map((option, index) => (
-                  <option key={index} value={option.value || option}>
-                    {option.label || option}
+                {question.options.map((opt) => (
+                  <option key={opt.value || opt} value={opt.value || opt}>
+                    {opt.label || opt}
                   </option>
                 ))}
               </select>
@@ -255,23 +220,22 @@ const Profile = () => {
           );
         case "slider":
           return (
-            <div className="input-group slider-group">
-              <div className="slider-labels">
-                <span>{question.labels[0]}</span>
-                <span>{question.labels[1]}</span>
+            <div className="input-group slider-container">
+              <div className="slider-wrapper">
+                <input
+                  type="range"
+                  min={question.min}
+                  max={question.max}
+                  value={value || 5}
+                  onChange={(e) => handleChange(question.id, e.target.value)}
+                  className="slider"
+                />
+                <div className="slider-labels">
+                  <span>{question.labels[0]}</span>
+                  <span className="slider-value">{value || 5}</span>
+                  <span>{question.labels[1]}</span>
+                </div>
               </div>
-              <input
-                type="range"
-                min={question.min}
-                max={question.max}
-                value={value || question.min}
-                onChange={(e) => handleChange(question.id, e.target.value)}
-                className="slider-field"
-              />
-              <div className="slider-value">
-                Selected: {value || question.min}
-              </div>
-              {error && <span className="error-text">{error}</span>}
             </div>
           );
         case "textarea":
@@ -280,133 +244,85 @@ const Profile = () => {
               <textarea
                 value={value}
                 onChange={(e) => handleChange(question.id, e.target.value)}
+                className="input-field"
                 placeholder={question.placeholder}
-                className="textarea-field"
-                rows="4"
+                rows={4}
               />
               {error && <span className="error-text">{error}</span>}
             </div>
           );
         default:
-          return (
-            <div className="input-group">
-              <input
-                type="text"
-                value={value}
-                onChange={(e) => handleChange(question.id, e.target.value)}
-                className="input-field"
-              />
-              {error && <span className="error-text">{error}</span>}
-            </div>
-          );
+          return null;
       }
     },
     [formData, validationErrors, handleChange]
   );
 
-  const handleExportPDF = () => {
-    const content = document.querySelector(".profile-card");
-    html2pdf().from(content).save("Financial_Profile.pdf");
-  };
-
-  const handleRequestAI = async () => {
-    try {
-      await requestPhi2Advice(formData);
-      toast.success("AI Advice Loaded");
-    } catch (error) {
-      toast.error("Failed to fetch AI insights");
-    }
-  };
-
-  const handleDeleteProfile = async () => {
-    if (window.confirm("Are you sure you want to delete your profile?")) {
-      try {
-        await deleteProfile();
-        setFormData({});
-        toast.success("Profile deleted successfully");
-      } catch (error) {
-        toast.error("Error deleting profile");
-      }
-    }
-  };
-
-  const handleSubmit = async () => {
-    const errors = {};
-
-    if (bulkEdit) {
-      questions.forEach((q) => {
-        const error = validateField(q.id, formData[q.id]);
-        if (error) errors[q.id] = error;
-      });
-    } else if (singleEditIndex !== null) {
-      const question = questions[singleEditIndex];
-      const error = validateField(question.id, formData[question.id]);
-      if (error) errors[question.id] = error;
-    } else {
-      const currentQuestion = questions[step];
-      const error = validateField(
-        currentQuestion.id,
-        formData[currentQuestion.id]
-      );
-      if (error) errors[currentQuestion.id] = error;
-    }
-
-    // Validate custom expenses
-    const expenseError = validateField(
-      "customExpenses",
-      formData.customExpenses || []
-    );
-    if (expenseError) errors.customExpenses = expenseError;
-
-    if (Object.keys(errors).length > 0) {
-      setValidationErrors(errors);
-      toast.error("Please fix errors before saving.");
+  const handleNext = useCallback(() => {
+    const currentQuestion = questions[step];
+    const error = validateField(currentQuestion.id, formData[currentQuestion.id]);
+    if (error) {
+      setValidationErrors((prev) => ({ ...prev, [currentQuestion.id]: error }));
+      toast.error(`Please complete the current question: ${error}`);
       return;
     }
+    setStep((prev) => Math.min(prev + 1, questions.length - 1));
+  }, [step, formData, validateField]);
 
+  const handleBack = useCallback(() => setStep((prev) => Math.max(prev - 1, 0)), []);
+
+  const handleSubmit = useCallback(async () => {
+    const currentQuestion = questions[step];
+    const error = validateField(currentQuestion.id, formData[currentQuestion.id]);
+    if (error) {
+      setValidationErrors((prev) => ({ ...prev, [currentQuestion.id]: error }));
+      toast.error(`Please complete the current question: ${error}`);
+      return;
+    }
     setSubmitting(true);
     try {
-      await submitProfile({
-        ...formData,
-        customExpenses:
-          formData.customExpenses?.filter((e) => e.name && e.amount) || [],
-      });
-      toast.success("Profile saved successfully");
+      await submitProfile({ ...formData });
       setEditMode(false);
-      setBulkEdit(false);
-      setSingleEditIndex(null);
     } catch (error) {
-      toast.error(error.response?.data?.message || "Error saving profile");
+      console.error("Profile save error:", error);
+      const message = error.response?.data?.message || error.message;
+      toast.error(message || "Failed to save profile");
     } finally {
       setSubmitting(false);
     }
-  };
+  }, [step, formData, validateField, submitProfile]);
 
   useEffect(() => {
-    // Initial fetch and token changes only
     const controller = new AbortController();
-    const loadInitialProfile = async () => {
-      if (!user?.token) return;
-      try {
-        await fetchProfile(controller.signal);
-      } finally {
+    let isMounted = true;
+    const loadProfile = async () => {
+      if (!user?.token) {
         setLocalLoading(false);
+        return;
+      }
+      try {
+        await fetchProfile();
+      } catch (err) {
+        if (isMounted) {
+          console.error("Profile load error:", err);
+          toast.error(err.message || "Failed to load profile data");
+        }
+      } finally {
+        if (isMounted) setLocalLoading(false);
       }
     };
-    loadInitialProfile();
-    return () => controller.abort();
-  }, [user, fetchProfile]); // Remove dashState.profile from dependencies
+    loadProfile();
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
+  }, [user, fetchProfile]);
 
-  // Separate effect for syncing form data
   useEffect(() => {
     if (dashState.profile) {
-      setFormData({ ...dashState.profile });
-      setEditMode(false);
+      setFormData(dashState.profile);
     }
-  }, [dashState.profile]); // Only sync form data without fetching
-  useEffect(() => {
-    calculateCompletion();
-  }, [formData, calculateCompletion]);
+  }, [dashState.profile]);
 
   if (localLoading || profileLoading) {
     return (
@@ -422,104 +338,41 @@ const Profile = () => {
   return (
     <div className="profile-container">
       <h2>📋 My Financial Profile</h2>
-
-      <div className="profile-progress">
-        <div
-          className="progress-bar"
-          style={{ width: `${completionPercent}%` }}
-        ></div>
-        <span>{completionPercent}% Complete</span>
-      </div>
-
       <div className="profile-card">
-        {!editMode ? (
-          <ProfileView
-            formData={formData}
-            questions={questions}
-            aiAdvice={aiAdvice}
-            goalPlan={goalPlan}
-            marketData={marketData}
-            onEditAll={() => {
-              setEditMode(true);
-              setBulkEdit(true);
-            }}
-            onEditSpecific={(index) => {
-              setEditMode(true);
-              setBulkEdit(false);
-              setSingleEditIndex(index);
-            }}
-            handleExportPDF={handleExportPDF}
-            handleRequestAI={handleRequestAI}
-            handleDelete={handleDeleteProfile}
-          />
-        ) : singleEditIndex !== null ? (
-          <SingleEditMode
-            questionIndex={singleEditIndex}
-            handleSubmit={handleSubmit}
-            submitting={submitting}
-            onCancel={() => {
-              setEditMode(false);
-              setSingleEditIndex(null);
-            }}
-            renderQuestionInput={renderQuestionInput}
-            validationErrors={validationErrors}
-          />
-        ) : bulkEdit ? (
-          <BulkEditMode
-            questions={questions}
-            renderQuestionInput={renderQuestionInput}
-            validationErrors={validationErrors}
-            handleSubmit={handleSubmit}
-            submitting={submitting}
-            onCancel={() => setEditMode(false)}
-          />
-        ) : (
-          <QuestionFlow
-            step={step}
-            questions={questions}
-            formData={formData}
-            validationErrors={validationErrors}
-            handleBack={() => setStep((prev) => Math.max(prev - 1, 0))}
-            handleNext={() =>
-              setStep((prev) => Math.min(prev + 1, questions.length - 1))
-            }
-            handleSubmit={handleSubmit}
-            submitting={submitting}
-            addCustomExpense={addCustomExpense}
-            removeCustomExpense={removeCustomExpense}
-            updateCustomExpense={updateCustomExpense}
-            renderQuestionInput={renderQuestionInput}
-          />
-        )}
+        <BsPersonCircle className="profile-icon" />
+     {editMode ? (
+  <QuestionFlow
+    step={step}
+    questions={questions}
+    formData={formData}
+    validationErrors={validationErrors}
+    handleBack={handleBack}
+    handleNext={handleNext}
+    handleSubmit={handleSubmit}
+    submitting={submitting}
+    updateCustomExpense={updateCustomExpense}
+    removeCustomExpense={removeCustomExpense}
+    addCustomExpense={addCustomExpense}
+    renderQuestionInput={renderQuestionInput}
+  />
+) : (
+  <div className="submitted-success-message">
+    <h3>✅ Profile Saved Successfully!</h3>
+    <p>
+      You can now view your full profile details from the{" "}
+      <strong>“View Profile”</strong> page.
+    </p>
+  </div>
+)}
+
       </div>
     </div>
   );
 };
 
-const ProfileView = ({
-  formData,
-  questions,
-  aiAdvice,
-  goalPlan,
-  marketData,
-  onEditAll,
-  onEditSpecific,
-  handleExportPDF,
-  handleRequestAI,
-  handleDelete,
-}) => (
+const ProfileView = ({ formData, questions, aiAdvice, goalPlan, onEditAll, onEditSpecific }) => (
   <div className="submitted-results">
-    <div className="profile-actions">
-      <button onClick={onEditAll} className="edit-all-btn">
-        📝 Edit All
-      </button>
-      <button onClick={handleExportPDF}>📄 Export PDF</button>
-      <button onClick={handleRequestAI}>🤖 AI Insights</button>
-      <button onClick={handleDelete} className="delete-btn">
-        🗑️ Delete Profile
-      </button>
-    </div>
-
+    <h3>📌 Your Responses</h3>
     <div className="profile-summary">
       {questions.map((q, index) => (
         <div key={q.id} className="profile-item">
@@ -532,41 +385,34 @@ const ProfileView = ({
           </button>
         </div>
       ))}
-      {formData.customExpenses?.length > 0 && (
-        <div className="expenses-summary">
-          <h4>Custom Expenses</h4>
-          {formData.customExpenses.map((expense, index) => (
-            <div key={index} className="expense-item">
-              <p>
-                {expense.name}: ${expense.amount}
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
+    <button onClick={onEditAll} className="edit-all-btn">
+      📝 Edit All Responses
+    </button>
 
     {aiAdvice && (
       <div className="ai-advice-section">
-        <h3>💡 AI Recommendations</h3>
-        <p>{aiAdvice.summary}</p>
-        <ul>
-          {aiAdvice.advice?.map((tip, i) => (
-            <li key={i}>✅ {tip}</li>
-          ))}
-        </ul>
+        <h3>💡 AI Financial Recommendations</h3>
+        <div className="advice-summary">
+          <p>{aiAdvice.summary}</p>
+          <ul>
+            {aiAdvice.advice?.map((tip) => (
+              <li key={tip}>✅ {tip}</li>
+            ))}
+          </ul>
+        </div>
       </div>
     )}
 
     {goalPlan && (
       <div className="goal-plan-section">
-        <h3>🎯 Goal Plan</h3>
-        {goalPlan.map((goal, i) => (
-          <div key={i}>
-            <h4>🏁 {goal.goal}</h4>
+        <h3>🎯 Your Personalized Goal Plan</h3>
+        {goalPlan.map((g) => (
+          <div key={g.goal} className="goal-item">
+            <h4>🏁 {g.goal}</h4>
             <ul>
-              {goal.milestones?.map((m, j) => (
-                <li key={j}>
+              {g.milestones?.map((m) => (
+                <li key={`${g.goal}-${m.task}`}>
                   📅 {m.task} by <strong>{m.target_date}</strong>
                 </li>
               ))}
@@ -575,83 +421,8 @@ const ProfileView = ({
         ))}
       </div>
     )}
-
-    {marketData?.stockPredictions && (
-      <div className="forecast">
-        <h3>📈 Market Forecast</h3>
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={marketData.stockPredictions}>
-            <XAxis dataKey="date" />
-            <YAxis />
-            <Tooltip />
-            <Line
-              type="monotone"
-              dataKey="value"
-              stroke="#8884d8"
-              name="Stock Prediction"
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-    )}
   </div>
 );
-
-const BulkEditMode = ({
-  questions,
-  renderQuestionInput,
-  validationErrors,
-  handleSubmit,
-  submitting,
-  onCancel,
-}) => (
-  <div className="bulk-edit-mode">
-    {questions.map((q) => (
-      <div key={q.id} className="question-item">
-        <label>{q.text}</label>
-        {renderQuestionInput(q)}
-        {validationErrors[q.id] && (
-          <span className="error-text">{validationErrors[q.id]}</span>
-        )}
-      </div>
-    ))}
-    <div className="profile-actions">
-      <button onClick={handleSubmit} disabled={submitting}>
-        {submitting ? "Saving..." : "💾 Save Profile"}
-      </button>
-      <button onClick={onCancel}>Cancel</button>
-    </div>
-  </div>
-);
-
-const SingleEditMode = ({
-  questionIndex,
-  handleSubmit,
-  submitting,
-  onCancel,
-  renderQuestionInput,
-  validationErrors,
-}) => {
-  const question = questions[questionIndex];
-
-  return (
-    <div className="single-edit-mode">
-      <div className="question-item">
-        <label>{question.text}</label>
-        {renderQuestionInput(question)}
-        {validationErrors[question.id] && (
-          <span className="error-text">{validationErrors[question.id]}</span>
-        )}
-      </div>
-      <div className="profile-actions">
-        <button onClick={handleSubmit} disabled={submitting}>
-          {submitting ? "Saving..." : "💾 Save Changes"}
-        </button>
-        <button onClick={onCancel}>Cancel</button>
-      </div>
-    </div>
-  );
-};
 
 const QuestionFlow = ({
   step,
@@ -662,9 +433,9 @@ const QuestionFlow = ({
   handleNext,
   handleSubmit,
   submitting,
-  addCustomExpense,
-  removeCustomExpense,
   updateCustomExpense,
+  removeCustomExpense,
+  addCustomExpense,
   renderQuestionInput,
 }) => (
   <div className="question-block">
@@ -714,11 +485,6 @@ const QuestionFlow = ({
           <button onClick={addCustomExpense} className="add-expense-btn">
             ➕ Add Another Expense
           </button>
-          {validationErrors.customExpenses && (
-            <span className="error-text">
-              {validationErrors.customExpenses}
-            </span>
-          )}
         </div>
       )}
     </div>
@@ -745,52 +511,5 @@ const QuestionFlow = ({
     </div>
   </div>
 );
-
-// Prop type validations
-ProfileView.propTypes = {
-  formData: PropTypes.object.isRequired,
-  questions: PropTypes.array.isRequired,
-  aiAdvice: PropTypes.object,
-  goalPlan: PropTypes.array,
-  marketData: PropTypes.object,
-  onEditAll: PropTypes.func.isRequired,
-  onEditSpecific: PropTypes.func.isRequired,
-  handleExportPDF: PropTypes.func.isRequired,
-  handleRequestAI: PropTypes.func.isRequired,
-  handleDelete: PropTypes.func.isRequired,
-};
-
-BulkEditMode.propTypes = {
-  questions: PropTypes.array.isRequired,
-  renderQuestionInput: PropTypes.func.isRequired,
-  validationErrors: PropTypes.object.isRequired,
-  handleSubmit: PropTypes.func.isRequired,
-  submitting: PropTypes.bool.isRequired,
-  onCancel: PropTypes.func.isRequired,
-};
-
-SingleEditMode.propTypes = {
-  questionIndex: PropTypes.number.isRequired,
-  handleSubmit: PropTypes.func.isRequired,
-  submitting: PropTypes.bool.isRequired,
-  onCancel: PropTypes.func.isRequired,
-  renderQuestionInput: PropTypes.func.isRequired,
-  validationErrors: PropTypes.object.isRequired,
-};
-
-QuestionFlow.propTypes = {
-  step: PropTypes.number.isRequired,
-  questions: PropTypes.array.isRequired,
-  formData: PropTypes.object.isRequired,
-  validationErrors: PropTypes.object.isRequired,
-  handleBack: PropTypes.func.isRequired,
-  handleNext: PropTypes.func.isRequired,
-  handleSubmit: PropTypes.func.isRequired,
-  submitting: PropTypes.bool.isRequired,
-  addCustomExpense: PropTypes.func.isRequired,
-  removeCustomExpense: PropTypes.func.isRequired,
-  updateCustomExpense: PropTypes.func.isRequired,
-  renderQuestionInput: PropTypes.func.isRequired,
-};
 
 export default Profile;
