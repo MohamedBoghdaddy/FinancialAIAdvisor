@@ -5,6 +5,7 @@ import { AuthProvider } from "./context/AuthContext";
 // Tools
 import LoanCalculator from "./Frontend/components/Dashboard/tools/LoanCalculator";
 import NetWorthCalculator from "./Frontend/components/Dashboard/tools/NetWorthCalculator";
+import CurrencyConverter from "./Frontend/components/Dashboard/tools/CurrencyConverter";
 
 // Frontend Components
 import Home from "./Frontend/components/Home/home";
@@ -21,7 +22,6 @@ import Settings from "./Frontend/components/Dashboard/pages/Settings.jsx";
 import Profile from "./Frontend/components/Dashboard/pages/Profile.jsx";
 import AnalyticsReport from "./Frontend/components/Dashboard/analytics";
 import FinancialReportPage from "./Frontend/components/Dashboard/pages/FinancialReport";
-import CurrencyConverter from "./Frontend/components/Dashboard/tools/CurrencyConverter";
 import AdminDashboard from "./Frontend/components/Dashboard/admin/AdminDashboard.js";
 import UserDetails from "./Frontend/components/Dashboard/admin/UserDetails";
 
@@ -227,7 +227,7 @@ function App() {
               </AdminRoute>
             }
           />
-          <Routes
+          <Route
             path="/admin/users/:id"
             element={
               <AdminRoute>

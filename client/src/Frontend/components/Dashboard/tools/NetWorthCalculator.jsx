@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import '../styles/NetWorth.css';
+import '../../styles/NetWorth.css';
 
 const NetWorthCalculator = () => {
   const [cash, setCash] = useState('');
