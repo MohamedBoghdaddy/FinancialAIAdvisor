@@ -4,6 +4,8 @@ import { AuthProvider } from "./context/AuthContext";
 import Chatbot from "./Frontend/components/Pages/Chatbot.js";
 
 // Tools
+import LoanCalculator from "./Frontend/components/Dashboard/tools/LoanCalculator";
+import NetWorthCalculator from "./Frontend/components/Dashboard/tools/NetWorthCalculator";
 
 import ProfileCardPage from "./Frontend/components/Dashboard/pages/ProfileCardPage";
 import CalendarExpenseTracker from "./Frontend/components/Dashboard/pages/CalendarExpenseTracker";
@@ -23,7 +25,6 @@ import Settings from "./Frontend/components/Dashboard/pages/Settings.jsx";
 import Profile from "./Frontend/components/Dashboard/pages/Profile.jsx";
 import AnalyticsReport from "./Frontend/components/Dashboard/analytics";
 import FinancialReportPage from "./Frontend/components/Dashboard/pages/FinancialReport";
-import CurrencyConverter from "./Frontend/components/Dashboard/tools/CurrencyConverter";
 import AdminDashboard from "./Frontend/components/Dashboard/admin/AdminDashboard.js";
 import UserDetails from "./Frontend/components/Dashboard/admin/UserDetails";
 

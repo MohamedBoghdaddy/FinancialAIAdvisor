@@ -1,42 +1,64 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Request, status
-from pydantic import BaseModel
-from services.agent.Phi_Model.phi2_loader import model, tokenizer
+# services/agent/Phi_Model/phi_model_router.py
+from fastapi import FastAPI, APIRouter, HTTPException, Request, status, Depends, WebSocket
+from pydantic import BaseModel, Field
+from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM
+from fastapi.middleware.cors import CORSMiddleware
+from typing import Optional, List, Dict
+from datetime import datetime
+from dotenv import load_dotenv
+from googletrans import Translator
 import torch
-import os
 import jwt
 import asyncio
 import requests
-from datetime import datetime
-from typing import Optional
-from dotenv import load_dotenv
-from fastapi.middleware.cors import CORSMiddleware
+import json
+import os
+import re
 
 # === Load environment variables ===
 load_dotenv()
+JWT_SECRET = os.getenv("JWT_SECRET", "")
+PROFILE_SERVICE_URL = os.getenv("PROFILE_SERVICE_URL", "http://localhost:4000")
+MAX_HISTORY = 20
 
-# === Initialize App ===
+# === App & Router Setup ===
 app = FastAPI()
 router = APIRouter()
 
-# === CORS Middleware ===
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Consider replacing with frontend origin
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# === Configuration ===
-JWT_SECRET = os.getenv("JWT_SECRET", "")
-PROFILE_SERVICE_URL = os.getenv("PROFILE_SERVICE_URL", "http://localhost:3000")
+# === Model Setup ===
+model_name = "microsoft/phi-2"
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForCausalLM.from_pretrained(model_name)
+model.eval()
+chat = pipeline("text-generation", model=model, tokenizer=tokenizer)
 
-# === Input Schema ===
-class BudgetAdviceRequest(BaseModel):
-    message: Optional[str] = None
-    use_profile: bool = False
+# === Models ===
+class PromptInput(BaseModel):
+    message: str
+    userId: Optional[str]
+    salary: Optional[float]
 
-# === Utility Functions ===
+class TranslationRequest(BaseModel):
+    text: str
+    targetLang: str
+
+class ChatMessage(BaseModel):
+    content: str
+    is_user: bool
+    timestamp: datetime
+
+# In-memory chat history per user (simple placeholder, replace with DB in production)
+user_histories: Dict[str, List[ChatMessage]] = {}
+
+# === Utilities ===
 def auth_user(request: Request) -> dict:
     auth_header = request.headers.get("Authorization", "")
     if not auth_header.startswith("Bearer "):
@@ -46,91 +68,108 @@ def auth_user(request: Request) -> dict:
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
-async def fetch_profile(request: Request) -> dict:
+def fetch_profile_from_node_backend(request: Request) -> dict:
     try:
-        response = await asyncio.to_thread(
-            lambda: requests.get(
-                f"{PROFILE_SERVICE_URL}/api/profile/me",
-                headers={"Authorization": request.headers["Authorization"]},
-                timeout=1.5
-            )
+        response = requests.get(
+            f"{PROFILE_SERVICE_URL}/me",
+            headers={"Authorization": request.headers.get("Authorization", "")},
+            timeout=3.0
         )
         response.raise_for_status()
         return response.json()
-    except Exception:
-        raise HTTPException(503, "Profile service unavailable")
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f"Failed to fetch profile: {str(e)}")
 
-def format_profile(profile: dict) -> str:
+def profile_to_prompt(profile):
     return f"""
-Age: {profile.get('age', 30)}
-Income: {profile.get('income', 0)}/month
-Debt Status: {'Has debt' if profile.get('hasDebt') else 'No debt'}
-Risk Tolerance: {profile.get('riskTolerance', 5)}/10
-Financial Goals: {profile.get('financialGoals', 'Not specified')}
-Savings Rate: {profile.get('savingsRate', 15)}%
+I am a {profile['age']}-year-old {profile['employmentStatus'].lower()} individual earning {profile['salary']} EGP monthly.
+I currently {profile['homeOwnership'].lower()} my home and I {'do' if profile['hasDebt'] == 'Yes' else "don’t"} have any debts.
+My lifestyle is best described as {profile['lifestyle'].lower()}.
+I have a risk tolerance of {profile['riskTolerance']} out of 10, and I usually invest surplus money (investment approach score: {profile['investmentApproach']}).
+On emergency preparedness I score {profile['emergencyPreparedness']} out of 10, and I research financial trends about {profile['financialTracking']} out of 10.
+I prioritize future financial security over present comfort (score: {profile['futureSecurity']}/10), and my spending discipline is {profile['spendingDiscipline']}/10.
+If I received a large sum of money, I would allocate {profile['assetAllocation']} out of 10 toward long-term assets.
+I am slightly {'risk-averse' if profile['riskTaking'] <= 5 else 'risk-seeking'}, and I {'have' if profile['dependents'] == 'Yes' else "don’t have"} financial dependents.
+My primary financial goals are: {profile['financialGoals']}.
 """
 
-async def generate_budget_response(prompt: str) -> str:
-    try:
-        inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
-        with torch.inference_mode():
-            output = model.generate(
-                **inputs,
-                max_new_tokens=400,
-                do_sample=True,
-                top_k=50,
-                top_p=0.95,
-                temperature=0.7,
-                pad_token_id=tokenizer.pad_token_id
-            )
-        generated = tokenizer.decode(output[0], skip_special_tokens=True)
-        return generated.split("### Response:")[-1].strip()[:1500]
-    except Exception as e:
-        raise RuntimeError(f"Generation failed: {str(e)}")
+def clean_output(text):
+    text = re.sub(r"```.*?```", "", text, flags=re.DOTALL)
+    text = re.sub(r"(?i)(print|def|class|import|for|if|while|return).*", "", text)
+    return text.strip()
 
-# === API Endpoint ===
-@router.post("/budget-advice", status_code=200)
-async def get_budget_advice(request: Request, data: BudgetAdviceRequest):
-    try:
-        user = auth_user(request)
-        profile = await fetch_profile(request) if data.use_profile else None
+def get_response(user_input: str, is_profile: bool = False) -> str:
+    prompt = f"""### System:
+You are Phi-2, a fine-tuned AI trained on expert-level financial planning data and real-world scenarios. Your goal is to provide **personalized**, **practical**, and **emotionally intelligent** financial advice. Communicate in clear, concise, and encouraging language.
 
-        prompt = f"""### Instruction:
-You are a financial assistant. {'Use this profile:' if data.use_profile else 'Answer this question:'}
+When given a user **profile**, analyze it holistically to understand the user’s lifestyle, goals, financial health, and risk tolerance. Then summarize key insights and formulate an investment + life management strategy.
 
-{format_profile(profile) if data.use_profile else data.message}
+When given a **question**, treat it as a standalone inquiry. Provide step-by-step reasoning, define any key terms, and tailor your response to non-experts.
 
-Provide advice structured as:
-1️⃣ Fixed Expenses
-2️⃣ Variable Expenses
-3️⃣ Financial Goals
+Only respond under the "### Response:" section.
+Never refer to yourself as an AI model.
+Be proactive, yet grounded in logic.
 
-Include specific percentages that total 100%
-Add one practical tip
+### {"User Profile" if is_profile else "User Question"}:
+{user_input}
 
 ### Response:
 """
-
-        response = await generate_budget_response(prompt)
-
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        file_path = f"budgets/budget_{timestamp}.txt" if os.getenv("SAVE_ADVICE") else None
-
-        if file_path:
-            os.makedirs(os.path.dirname(file_path), exist_ok=True)
-            with open(file_path, "w") as f:
-                f.write(response)
-
-        return {
-            "advice": response,
-            "saved_path": file_path,
-            "timestamp": timestamp
-        }
-
-    except HTTPException as he:
-        raise he
+    try:
+        response = chat(
+            prompt,
+            max_new_tokens=500,
+            do_sample=True,
+            top_k=20,
+            top_p=0.85,
+            temperature=0.5,
+            pad_token_id=tokenizer.pad_token_id
+        )
+        generated = response[0]['generated_text']
+        answer = generated.split("### Response:")[-1].strip()
+        return clean_output(answer)
     except Exception as e:
-        raise HTTPException(500, detail=f"Budget advice error: {str(e)}")
+        return f"⚠️ Error: {str(e)}"
 
-# === Register Router ===
-app.include_router(router)
+# === API Endpoints ===
+@router.post("/chat")
+async def chat_with_ai(prompt: PromptInput, request: Request):
+    try:
+        profile_data = fetch_profile_from_node_backend(request)
+        prompt_text = profile_to_prompt(profile_data)
+
+        user_id = prompt.userId or "anonymous"
+        if user_id not in user_histories:
+            user_histories[user_id] = []
+
+        # Combine history
+        history_str = "\n".join(
+            f"{'User' if msg.is_user else 'Assistant'}: {msg.content}" for msg in user_histories[user_id][-MAX_HISTORY:]
+        )
+
+        combined = f"{prompt_text}\n\nConversation History:\n{history_str}\n\nUser Question: {prompt.message}"
+        response_text = get_response(combined, is_profile=True)
+
+        # Save exchange to history
+        user_histories[user_id].append(ChatMessage(content=prompt.message, is_user=True, timestamp=datetime.now()))
+        user_histories[user_id].append(ChatMessage(content=response_text, is_user=False, timestamp=datetime.now()))
+
+        return {"response": response_text}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Chat error: {str(e)}")
+
+@router.post("/translate")
+async def translate_text(body: TranslationRequest):
+    try:
+        translator = Translator()
+        translated = translator.translate(body.text, dest=body.targetLang)
+        return {"translation": translated.text}
+    except Exception as e:
+        raise HTTPException(500, f"Translation error: {str(e)}")
+
+# === Mount Router ===
+app.include_router(router, prefix="/api")
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

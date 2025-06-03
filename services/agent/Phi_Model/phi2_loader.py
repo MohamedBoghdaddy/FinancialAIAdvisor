@@ -7,9 +7,9 @@ from peft import PeftModel
 
 
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH = os.path.join(BASE_DIR, "phi2-finetuned")
-OFFLOAD_DIR = "./offload"
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+MODEL_PATH = os.path.join(BASE_DIR, "services", "agent", "Phi_Model", "phi2-finetuned")
+OFFLOAD_DIR = os.path.join(BASE_DIR, "offload")
 
 os.makedirs(OFFLOAD_DIR, exist_ok=True)
 

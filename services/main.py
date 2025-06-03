@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routes.chatbot import chatbot_bp
+
 # === Routers ===
 from stock.stock_router import router as stock_router
 from gold.gold_router import router as gold_router
