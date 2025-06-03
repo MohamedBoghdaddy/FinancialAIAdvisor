@@ -1,6 +1,5 @@
-# === Full Merged Code with Caching & Natural Language Explanations ===
 from fastapi import FastAPI, APIRouter, HTTPException, Request
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from transformers import pipeline
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional, List, Dict
@@ -8,7 +7,6 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from googletrans import Translator
 import torch
-import jwt
 import requests
 import json
 import os
@@ -22,10 +20,8 @@ PROFILE_SERVICE_URL = os.getenv("PROFILE_SERVICE_URL", "http://localhost:4000")
 BASE_API_URL = "http://localhost:8000"
 MAX_HISTORY = 20
 
-# === App & Router Setup ===
-app = FastAPI()
+# === Router Setup ===
 router = APIRouter()
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 # === Model Setup ===
 model, tokenizer = get_model()
@@ -64,18 +60,20 @@ user_histories: Dict[str, List[ChatMessage]] = {}
 
 # === API Helpers ===
 def call_api(endpoint: str) -> dict:
+    # Automatically route through /api prefix
+    full_url = f"{BASE_API_URL}/api/{endpoint.lstrip('/')}"
     cache_key = f"api::{endpoint}"
     cached = get_cached(cache_key)
     if cached:
         return cached
     try:
-        res = requests.get(f"{BASE_API_URL}/{endpoint}", timeout=5)
+        res = requests.get(full_url, timeout=5)
         res.raise_for_status()
         data = res.json()
         set_cached(cache_key, data)
         return data
     except Exception as e:
-        return {"error": f"Failed to call {endpoint}: {str(e)}"}
+        return {"error": f"Failed to call {full_url}: {str(e)}"}
 
 def get_stock_data():
     return {
@@ -94,10 +92,10 @@ def get_gold_data():
 
 def get_real_estate_data():
     return {
-        "metrics": call_api("real_estate/metrics"),
-        "forecast": call_api("real_estate/forecast"),
-        "predict": call_api("real_estate/predict"),
-        "return": call_api("real_estate/return")
+        "metrics": call_api("realestate/metrics"),
+        "forecast": call_api("realestate/forecast"),
+        "predict": call_api("realestate/predict"),
+        "return": call_api("realestate/return")
     }
 
 # === Explanation Helpers ===
@@ -114,7 +112,11 @@ def explain_metrics(title: str, data: dict) -> str:
     return "\n".join(lines)
 
 def is_financial_question(msg: str) -> bool:
-    keywords = ["invest", "savings", "retirement", "stock", "gold", "real estate", "budget", "debt", "salary", "expenses", "financial goal", "risk tolerance", "short term", "long term", "buy", "sell", "portfolio", "income", "loan"]
+    keywords = [
+        "invest", "savings", "retirement", "stock", "gold", "real estate", "budget",
+        "debt", "salary", "expenses", "financial goal", "risk tolerance",
+        "short term", "long term", "buy", "sell", "portfolio", "income", "loan"
+    ]
     return any(k in msg.lower() for k in keywords)
 
 def fetch_best_stock(short_term=True) -> str:
@@ -173,10 +175,14 @@ async def chat_with_ai(prompt: PromptInput, request: Request):
         return {"response": fetch_best_gold_or_real_estate("gold")}
 
     if "real estate" in prompt.message.lower():
-        return {"response": fetch_best_gold_or_real_estate("real_estate")}
+        return {"response": fetch_best_gold_or_real_estate("realestate")}
 
     try:
-        profile_data = requests.get(f"{PROFILE_SERVICE_URL}/api/profile/me", headers={"Authorization": request.headers.get("Authorization", "")}, timeout=3).json()
+        profile_data = requests.get(
+            f"{PROFILE_SERVICE_URL}/api/profile/me",
+            headers={"Authorization": request.headers.get("Authorization", "")},
+            timeout=3
+        ).json()
         profile = profile_data.get("data", {})
         prompt_text = f"""
 I am a {profile['age']}-year-old {profile['employmentStatus'].lower()} earning {profile['salary']} EGP/month.
@@ -188,7 +194,10 @@ Lifestyle: {profile['lifestyle']}, Risk Tolerance: {profile['riskTolerance']}, G
         if user_id not in user_histories:
             user_histories[user_id] = []
 
-        history_str = "\n".join(f"{'User' if msg.is_user else 'Assistant'}: {msg.content}" for msg in user_histories[user_id][-MAX_HISTORY:])
+        history_str = "\n".join(
+            f"{'User' if msg.is_user else 'Assistant'}: {msg.content}"
+            for msg in user_histories[user_id][-MAX_HISTORY:]
+        )
 
         stock_data = get_stock_data()
         gold_data = get_gold_data()
@@ -217,5 +226,3 @@ async def translate_text(body: TranslationRequest):
         return {"translation": translated.text}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Translation error: {str(e)}")
-
-app.include_router(router, prefix="/api")
