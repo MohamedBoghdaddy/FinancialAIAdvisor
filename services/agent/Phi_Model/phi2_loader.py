@@ -2,37 +2,48 @@
 
 import os
 import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 from peft import PeftModel
+from functools import lru_cache
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+LORA_PATH = os.path.join(BASE_DIR, "phi2-finetuned")
 
+# ✅ Device & Optimization Settings
+device = "cuda" if torch.cuda.is_available() else "cpu"
+print(f"🧠 Using device: {device.upper()}")
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-MODEL_PATH = os.path.join(BASE_DIR, "services", "agent", "Phi_Model", "phi2-finetuned")
-OFFLOAD_DIR = os.path.join(BASE_DIR, "offload")
-
-os.makedirs(OFFLOAD_DIR, exist_ok=True)
-
-print("🚀 Loading base Phi-2 model...")
-base_model = AutoModelForCausalLM.from_pretrained(
-    "microsoft/phi-2",
-    device_map="auto",
-    torch_dtype=torch.float16,
-    offload_folder=OFFLOAD_DIR,
+bnb_config = BitsAndBytesConfig(
+    load_in_8bit=True,
+    llm_int8_threshold=6.0,
+    llm_int8_enable_fp32_cpu_offload=True
 )
 
-print("🔗 Applying LoRA adapter...")
-model = PeftModel.from_pretrained(
-    base_model,
-    MODEL_PATH,
-    device_map="auto",
-    offload_folder=OFFLOAD_DIR,
-)
+@lru_cache()
+def get_model():
+    print("📦 Loading quantized Phi-2 base...")
+    base_model = AutoModelForCausalLM.from_pretrained(
+        "microsoft/phi-2",
+        device_map="auto",
+        quantization_config=bnb_config,
+        trust_remote_code=True
+    )
 
-tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
-tokenizer.pad_token = tokenizer.eos_token
-model.eval()
+    print("🔗 Loading LoRA fine-tuned adapters...")
+    model = PeftModel.from_pretrained(
+        base_model,
+        LORA_PATH,
+        device_map="auto"
+    )
 
-print("✅ Phi-2 model fully loaded and ready.")
+    tokenizer = AutoTokenizer.from_pretrained(LORA_PATH)
+    tokenizer.pad_token = tokenizer.eos_token
+    model.eval()
 
-__all__ = ["model", "tokenizer"]
+    print("✅ Ready for fast inference with smart LoRA overlays.")
+    return model, tokenizer
+
+# 🚀 Preload on import
+model, tokenizer = get_model()
+
+__all__ = ["model", "tokenizer", "get_model"]

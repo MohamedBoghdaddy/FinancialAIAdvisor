@@ -1,4 +1,3 @@
-# main.py
 import os
 import sys
 from fastapi import FastAPI
@@ -10,11 +9,11 @@ sys.path.append(PROJECT_ROOT)
 
 # === Routers ===
 try:
-    from services.stock.stock_router import router as stock_router
-    from services.gold.gold_router import router as gold_router
-    from services.real_estate.real_estate_router import router as real_estate_router
-    from services.agent.Phi_Model.phi2_loader import model, tokenizer
-    from services.agent.Phi_Model.phi_model_router import router as phi_model_router
+    from stock.stock_router import router as stock_router
+    from gold.gold_router import router as gold_router
+    from real_estate.real_estate_router import router as real_estate_router
+    from agent.Phi_Model.phi_model_router import router as phi_model_router
+    from agent.Phi_Model.phi2_loader import get_model
 except ImportError as e:
     print(f"❌ Import Error: {str(e)}")
     print("Verify directory structure and __init__.py files:")
@@ -47,7 +46,7 @@ service_config = {
     "stock": {"router": stock_router, "prefix": "/api/stock"},
     "gold": {"router": gold_router, "prefix": "/api/gold"},
     "real_estate": {"router": real_estate_router, "prefix": "/api/realestate"},
-    "phi_model": {"router": phi_model_router, "prefix": "/api/phi"}
+    "phi_model": {"router": phi_model_router, "prefix": "/api"}
 }
 
 for service, config in service_config.items():
@@ -60,6 +59,7 @@ for service, config in service_config.items():
 # === Health Check ===
 @app.get("/api/health")
 async def health_check():
+    model, _ = get_model()
     return {
         "status": "operational",
         "services": list(service_config.keys()),
@@ -78,10 +78,10 @@ async def root():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
-        app,
+        "main:app",
         host="0.0.0.0",
         port=8000,
-        reload=True,
+        reload=False,  # Disable reload for performance
         ssl_keyfile="./localhost-key.pem",
         ssl_certfile="./localhost.pem"
     )

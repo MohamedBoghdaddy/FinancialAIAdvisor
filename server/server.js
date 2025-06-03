@@ -150,7 +150,7 @@ const forwardRequest = async (req, res, endpoint) => {
 };
 
 // 🔄 Proxy Routes
-app.post("/api/phi/chat", (req, res) => forwardRequest(req, res, "/chat"));
+app.post("/api/chat", (req, res) => forwardRequest(req, res, "/chat"));
 app.post("/api/phi/infer", (req, res) => forwardRequest(req, res, "/infer"));
 app.post("/api/phi/analyze", (req, res) => forwardRequest(req, res, "/analyze"));
 app.post("/api/phi/generate", (req, res) => forwardRequest(req, res, "/generate"));

@@ -18,13 +18,12 @@ import { FaStopCircle, FaCopy, FaLanguage } from "react-icons/fa";
 import Select from "react-select";
 import ReactMarkdown from "react-markdown";
 import axios from "axios";
-import Cookies from "js-cookie";
 import { ErrorBoundary } from "react-error-boundary";
 import { useAuthContext } from "../../../context/AuthContext";
 import { DashboardContext } from "../../../context/DashboardContext";
 import "../styles/AIChat.css";
 
-const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8000";
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8000" ||"http://127.0.0.1:8000";
 
 const languageOptions = [
   { label: "English", value: "en" },
@@ -36,14 +35,23 @@ const languageOptions = [
 ];
 
 const useSpeech = () => {
-  const synth = useRef(window.speechSynthesis);
-  useEffect(() => () => synth.current?.cancel(), []);
+  const synth = useRef(
+    typeof window !== "undefined" ? window.speechSynthesis : null
+  );
+
+  useEffect(() => {
+    return () => synth.current?.cancel();
+  }, []);
+
   const speak = useCallback((text) => {
+    if (!synth.current) return;
     const utterance = new SpeechSynthesisUtterance(text.slice(0, 250));
     utterance.lang = "en-US";
-    synth.current?.speak(utterance);
+    synth.current.speak(utterance);
   }, []);
+
   const stop = useCallback(() => synth.current?.cancel(), []);
+
   return { speak, stop };
 };
 
@@ -75,7 +83,7 @@ const ErrorFallback = () => (
 const AIChat = () => {
   const { state } = useAuthContext();
   const { profileData } = useContext(DashboardContext);
-  const { user } = state;
+  const { user, token } = state;
   const { speak, stop } = useSpeech();
 
   const [messages, setMessages] = useState([]);
@@ -93,6 +101,14 @@ const AIChat = () => {
   const formatTime = () =>
     new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
+  const getAxiosConfig = () => {
+    const config = {};
+    if (token) {
+      config.headers = { Authorization: `Bearer ${token}` };
+    }
+    return config;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
@@ -104,39 +120,41 @@ const AIChat = () => {
     setError(null);
 
     try {
-      const endpoints = [
-        "http://127.0.0.1:8000/budget-advice", // ✅ matches FastAPI route
-        "http://localhost:8000/budget-advice",
-        `${API_URL}/chat`,
-      ];
-
-      let response;
-      for (const endpoint of endpoints) {
-        try {
-          response = await axios.post(endpoint, {
-            message: input,
-            userId: user._id,
-            salary: profileData?.salary,
-          });
-          if (response.status === 200) break;
-        } catch (err) {
-          console.warn(`Failed with ${endpoint}, trying next...`);
-        }
-      }
+      const response = await axios.post(
+        `${API_URL}/api/chat`,
+        {
+          message: input,
+          userId: user?._id || "anonymous",
+          salary: profileData?.salary,
+          conversationHistory: messages
+            .filter((m) => m.role === "user" || m.role === "ai")
+            .map((m) => ({ role: m.role, content: m.text })),
+        },
+        getAxiosConfig()
+      );
 
       const aiMsg = {
         role: "ai",
-        text: response?.data?.response || "🤖 No response from AI.",
+        text: response.data?.response || "🤖 No response from AI.",
         time: formatTime(),
       };
 
       setMessages((prev) => [...prev, aiMsg]);
       speak(aiMsg.text);
     } catch (err) {
-      setError("Failed to process your message. Please try again.");
+      console.error("API Error:", err);
+      setError(
+        err.response?.data?.message ||
+          "Failed to process your message. Please try again."
+      );
+
       setMessages((prev) => [
         ...prev,
-        { role: "error", text: "❌ AI is unavailable.", time: formatTime() },
+        {
+          role: "error",
+          text: "❌ AI is currently unavailable. Please try again later.",
+          time: formatTime(),
+        },
       ]);
     } finally {
       setIsLoading(false);
@@ -154,10 +172,15 @@ const AIChat = () => {
 
   const translateMessage = async (text) => {
     try {
-      const res = await axios.post(`${API_URL}/translate`, {
-        text,
-        targetLang: selectedLanguage.value,
-      });
+      const res = await axios.post(
+        `${API_URL}/api/translate`,
+        {
+          text,
+          targetLang: selectedLanguage.value,
+        },
+        getAxiosConfig()
+      );
+
       setMessages((prev) => [
         ...prev,
         {
@@ -166,10 +189,15 @@ const AIChat = () => {
           time: formatTime(),
         },
       ]);
-    } catch {
+    } catch (err) {
+      console.error("Translation Error:", err);
       setMessages((prev) => [
         ...prev,
-        { role: "error", text: "❌ Translation failed", time: formatTime() },
+        {
+          role: "error",
+          text: "❌ Translation service unavailable",
+          time: formatTime(),
+        },
       ]);
     }
   };
@@ -210,6 +238,18 @@ const AIChat = () => {
           </Card.Header>
 
           <Card.Body className="chat-body">
+            {messages.length === 0 && (
+              <div className="welcome-message">
+                <p>Welcome! Ask me about:</p>
+                <ul>
+                  <li>Investment strategies</li>
+                  <li>Retirement planning</li>
+                  <li>Budget optimization</li>
+                  <li>Tax-saving methods</li>
+                </ul>
+              </div>
+            )}
+
             {messages.map((msg, idx) => (
               <div key={`${msg.time}-${idx}`} className="message-row">
                 <MessageBubble
@@ -219,8 +259,10 @@ const AIChat = () => {
                 />
               </div>
             ))}
+
             {isLoading && (
               <div className="typing-indicator">
+                <Spinner animation="border" size="sm" className="me-2" />
                 <span>Generating response{dots}</span>
               </div>
             )}
@@ -249,6 +291,7 @@ const AIChat = () => {
                     value={selectedLanguage}
                     onChange={setSelectedLanguage}
                     isSearchable={false}
+                    isDisabled={isLoading}
                   />
 
                   <Button
@@ -269,6 +312,7 @@ const AIChat = () => {
                     onClick={stop}
                     className="stop-button"
                     title="Stop speech"
+                    disabled={isLoading}
                   >
                     <FaStopCircle />
                   </Button>

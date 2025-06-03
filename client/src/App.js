@@ -3,8 +3,6 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 
 // Tools
-import LoanCalculator from "./Frontend/components/Dashboard/tools/LoanCalculator";
-import NetWorthCalculator from "./Frontend/components/Dashboard/tools/NetWorthCalculator";
 
 import ProfileCardPage from "./Frontend/components/Dashboard/pages/ProfileCardPage";
 import CalendarExpenseTracker from "./Frontend/components/Dashboard/pages/CalendarExpenseTracker";
@@ -24,6 +22,7 @@ import Settings from "./Frontend/components/Dashboard/pages/Settings.jsx";
 import Profile from "./Frontend/components/Dashboard/pages/Profile.jsx";
 import AnalyticsReport from "./Frontend/components/Dashboard/analytics";
 import FinancialReportPage from "./Frontend/components/Dashboard/pages/FinancialReport";
+import CurrencyConverter from "./Frontend/components/Dashboard/tools/CurrencyConverter";
 import AdminDashboard from "./Frontend/components/Dashboard/admin/AdminDashboard.js";
 import UserDetails from "./Frontend/components/Dashboard/admin/UserDetails";
 
@@ -173,7 +172,7 @@ function App() {
               </ProtectedRoute>
             }
           />
-         
+
           <Route
             path="/dashboard/tabs"
             element={
@@ -218,7 +217,7 @@ function App() {
               </AdminRoute>
             }
           />
-            <Route
+          <Route
             path="/profile-card"
             element={
               <ProtectedRoute>
@@ -231,36 +230,33 @@ function App() {
               </ProtectedRoute>
             }
           />
-        <Route
-  path="/expenses"
-  element={
-    <ProtectedRoute>
-      <>
-        <MiniNavbar />
-        <Sidebar />
-        <CalendarExpenseTracker />
-  
-      </>
-    </ProtectedRoute>
-  }
-/>
+          <Route
+            path="/expenses"
+            element={
+              <ProtectedRoute>
+                <>
+                  <MiniNavbar />
+                  <Sidebar />
+                  <CalendarExpenseTracker />
+                </>
+              </ProtectedRoute>
+            }
+          />
 
-              <Route
-  path="/finance"
-  element={
-    <ProtectedRoute>
-      <>
-        <MiniNavbar />
-        <Sidebar />
-       <FinanceTools />
-        <Footer />
-      </>
-    </ProtectedRoute>
-  }
-/>
+          <Route
+            path="/finance"
+            element={
+              <ProtectedRoute>
+                <>
+                  <MiniNavbar />
+                  <Sidebar />
+                  <FinanceTools />
+                  <Footer />
+                </>
+              </ProtectedRoute>
+            }
+          />
         </Routes>
-     
-
       </BrowserRouter>
     </AuthProvider>
   );
