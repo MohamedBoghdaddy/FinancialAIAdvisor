@@ -1,12 +1,14 @@
 import React from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
+import Chatbot from "./Frontend/components/Pages/Chatbot.js";
 
 // Tools
-
 import ProfileCardPage from "./Frontend/components/Dashboard/pages/ProfileCardPage";
 import CalendarExpenseTracker from "./Frontend/components/Dashboard/pages/CalendarExpenseTracker";
 import FinanceTools from "./Frontend/components/Dashboard/tools/FinanceTools";
+import CurrencyConverter from "./Frontend/components/Dashboard/tools/CurrencyConverter";
+
 // Frontend Components
 import Home from "./Frontend/components/Home/home";
 import NavBar from "./Frontend/components/Home/Navbar";
@@ -22,11 +24,9 @@ import Settings from "./Frontend/components/Dashboard/pages/Settings.jsx";
 import Profile from "./Frontend/components/Dashboard/pages/Profile.jsx";
 import AnalyticsReport from "./Frontend/components/Dashboard/analytics";
 import FinancialReportPage from "./Frontend/components/Dashboard/pages/FinancialReport";
-import CurrencyConverter from "./Frontend/components/Dashboard/tools/CurrencyConverter";
 import AdminDashboard from "./Frontend/components/Dashboard/admin/AdminDashboard.js";
 import UserDetails from "./Frontend/components/Dashboard/admin/UserDetails";
 
-import Chatbot from "./Frontend/components/chatbot/chatbot";
 import AIChat from "./Frontend/components/chatbot/AIChat";
 import Contact from "./Frontend/components/Contact/contact";
 import TabsView from "./Frontend/components/Dashboard/tabs/Tabs.jsx";
@@ -172,7 +172,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/dashboard/tabs"
             element={
@@ -197,24 +196,6 @@ function App() {
                   <Footer />
                 </>
               </ProtectedRoute>
-            }
-          />
-
-          {/* Admin Routes */}
-          <Route
-            path="/admin/dashboard"
-            element={
-              <AdminRoute>
-                <AdminDashboard />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/admin/users/:id"
-            element={
-              <AdminRoute>
-                <UserDetails />
-              </AdminRoute>
             }
           />
           <Route
@@ -242,7 +223,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/finance"
             element={
@@ -254,6 +234,37 @@ function App() {
                   <Footer />
                 </>
               </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/FinanceTools"
+            element={
+              <ProtectedRoute>
+                <>
+                  <MiniNavbar />
+                  <Sidebar />
+                  <FinanceTools />
+                  <Footer />
+                </>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Admin Routes */}
+          <Route
+            path="/admin/dashboard"
+            element={
+              <AdminRoute>
+                <AdminDashboard />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/users/:id"
+            element={
+              <AdminRoute>
+                <UserDetails />
+              </AdminRoute>
             }
           />
         </Routes>

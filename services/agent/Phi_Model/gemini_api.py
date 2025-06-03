@@ -1,86 +1,81 @@
-
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import google.generativeai as genai
 import json
 
 app = Flask(__name__)
-
-# Enable CORS for localhost:3000
 CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}})
 
 # ✅ Configure Gemini
-genai.configure(api_key="AIzaSyDqsJjBD4jbIsdF9pS8ZGnUShPOTKveC6M")
+genai.configure(api_key="AIzaSyByzGIAbMmpEz8BaI9FTx6LTBfmBVFouTk")
 model = genai.GenerativeModel("gemini-1.5-flash")
 
-@app.route("/generate", methods=["POST"])
-def generate():
+
+def build_prompt(user_input, goal):
+    income = user_input.get("income", "0")
+    rent = user_input.get("rent", "0")
+    utilities = user_input.get("utilities", "0")
+    diet = user_input.get("dietPlan", "Not Provided")
+    transport = user_input.get("transportCost", "0")
+    recurring = user_input.get("otherRecurring", "None")
+    savings = user_input.get("savingAmount", "0")
+    custom_expenses = user_input.get("customExpenses", [])
+    predictions = user_input.get("modelPredictions", {})
+    volatility = user_input.get("marketVolatility", {})
+
+    prompt = (
+        "You are a professional financial advisor trained on user profiles, market data (stocks, gold, real estate), and behavioral economics.\n\n"
+        "Your task is to analyze the user’s financial profile and return advice **only** based on their selected goal.\n\n"
+        "Use predicted investment returns and market volatility to guide asset selection (gold, stocks, real estate).\n"
+        "Responses must be realistic, actionable, and tailored to the user.\n\n"
+        "Respond in valid **JSON format only**.\n\n"
+        "User Profile:\n"
+        f"- Monthly Income: {income} EGP\n"
+        f"- Rent: {rent} EGP\n"
+        f"- Utilities: {utilities} EGP\n"
+        f"- Diet Plan: {diet}\n"
+        f"- Transportation Cost: {transport} EGP\n"
+        f"- Other Recurring Expenses: {recurring}\n"
+        f"- Monthly Savings: {savings} EGP\n"
+        "Custom Expenses:\n" +
+        "".join([f"  - {e.get('name', '')}: {e.get('amount', '')} EGP\n" for e in custom_expenses]) +
+        "\nPredicted Investment Returns:\n" +
+        "".join([f"- {asset}: {value}\n" for asset, value in predictions.items()]) +
+        "\nMarket Volatility:\n" +
+        "".join([f"- {asset}: Variance = {value}\n" for asset, value in volatility.items()]) +
+        f"\n\nUser Goal: {goal}\n\n"
+        "### Respond only in this JSON format:\n"
+        "{\n"
+        "  \"investment_plan\": [\"...\"],\n"
+        "  \"life_plan\": [\"...\"]\n"
+        "}\n"
+        f"Only include the section(s) based on the user's goal: '{goal}'."
+    )
+    return prompt
+
+@app.route("/generate/investment", methods=["POST"])
+def generate_investment():
+    return generate_advice(goal="investment")
+
+@app.route("/generate/life", methods=["POST"])
+def generate_life():
+    return generate_advice(goal="life_management")
+
+def generate_advice(goal):
     try:
-        print("✅ /generate endpoint called")
-
         user_input = request.get_json()
+        prompt = build_prompt(user_input, goal)
+        response = model.generate_content(prompt)
+        result_text = response.text
 
-        # Extract fields
-        income = user_input.get("income", "0")
-        rent = user_input.get("rent", "0")
-        utilities = user_input.get("utilities", "0")
-        diet = user_input.get("dietPlan", "Not Provided")
-        transport = user_input.get("transportCost", "0")
-        recurring = user_input.get("otherRecurring", "None")
-        savings = user_input.get("savingAmount", "0")
-        custom_expenses = user_input.get("customExpenses", [])
-
-        # Build structured prompt
-        prompt = (
-            "You are a professional financial advisor AI.\n"
-            "Analyze this user's financial data and provide:\n"
-            "1. A short summary\n"
-            "2. 6 personalized advice tips\n\n"
-            "User Profile:\n"
-            f"- Total Monthly Income: {income} EGP\n"
-            f"- Rent or Mortgage: {rent} EGP\n"
-            f"- Utilities: {utilities} EGP\n"
-            f"- Diet Plan: {diet}\n"
-            f"- Transportation Cost: {transport} EGP\n"
-            f"- Other Recurring Expenses: {recurring}\n"
-            f"- Monthly Savings: {savings} EGP\n"
-            "Custom Expenses:\n" +
-            "".join([f"  - {e.get('name', '')}: {e.get('amount', '')} EGP\n" for e in custom_expenses]) +
-            "\n\nRespond ONLY in valid JSON using this format:\n"
-            '{\n'
-            '  "summary": "Short financial overview...",\n'
-            '  "advice": [\n'
-            '    "Tip 1 - ...",\n'
-            '    "Tip 2 - ...",\n'
-            '    "Tip 3 - ...",\n'
-            '    "Tip 4 - ...",\n'
-            '    "Tip 5 - ...",\n'
-            '    "Tip 6 - ..."\n'
-            '  ]\n'
-            '}\n'
-            "Only respond with valid JSON. No extra words before or after."
-        )
-
-        # Generate response
-        try:
-            response = model.generate_content(prompt)
-            result_text = response.text
-            print("🧠 RAW GEMINI RESPONSE:\n", result_text)
-        except Exception as model_error:
-            print("❌ Gemini model error:", model_error)
-            return jsonify({"error": "Gemini model failed"}), 500
-
-        # Try to parse JSON directly
         try:
             cleaned = result_text.strip().removeprefix("```json").removesuffix("```").strip()
             result_json = json.loads(cleaned)
             return jsonify(result_json)
-        except json.JSONDecodeError as parse_err:
-            print("⚠️ Failed to parse as JSON:", parse_err)
-            return jsonify({"output": result_text})  # fallback
+        except json.JSONDecodeError:
+            return jsonify({"output": result_text})
 
     except Exception as e:
-        print("❌ Server Error:", e)
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":

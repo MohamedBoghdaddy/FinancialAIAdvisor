@@ -130,33 +130,12 @@ def plot_forecast_vs_actual(actual, predictions_dict):
 def train_and_forecast(csv_path, output_json, keras_model_path, xgb_model_path):
     df = load_and_clean_data(csv_path)
     target = df['Price']
-    df['target'] = target  # Ensure it's available for test
 
     train_size = int(len(target) * 0.7)
     val_size = int(len(target) * 0.15)
     train, val, test = target[:train_size], target[train_size:train_size + val_size], target[train_size + val_size:]
     df_train = df.iloc[:train_size]
     df_test = df.iloc[train_size + val_size:]
-
-    # === If both models exist, skip retraining
-    if os.path.exists(keras_model_path) and os.path.exists(xgb_model_path):
-        print("✅ Found cached models. Skipping training and evaluation.")
-
-        # Load models
-        lstm_model = Sequential()  # Not used here but shown as placeholder
-        xgb_model = joblib.load(xgb_model_path)
-
-        # Run only XGBoost prediction and return calculation
-        print("\n=== XGBOOST TEST ONLY MODE ===")
-        X_test = df_test[['Days_Since_Start', 'Built Area']].fillna(0)
-        y_test = df_test['target']
-
-        test_pred = xgb_model.predict(X_test)
-        current_price = y_test.iloc[-1]
-        predicted_price = test_pred[-1]
-        predicted_return = ((predicted_price - current_price) / current_price) * 100
-        print(f"📈 Cached Model: Predicted Real Estate Return: {predicted_return:.2f}%")
-        return
 
     # === ARIMA
     arima_model = ARIMA(train, order=(1, 1, 1)).fit()

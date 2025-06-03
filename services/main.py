@@ -2,6 +2,7 @@ import os
 import sys
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from routes.chatbot import chatbot_bp
 
 # Add project root to Python path
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -35,7 +36,11 @@ app = FastAPI(
 # === CORS Configuration ===
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:3000",  # React frontend
+        "http://localhost:4000",  # Optional Express backend
+        "*",                      # Allow all during development
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -46,7 +51,7 @@ service_config = {
     "stock": {"router": stock_router, "prefix": "/api/stock"},
     "gold": {"router": gold_router, "prefix": "/api/gold"},
     "real_estate": {"router": real_estate_router, "prefix": "/api/realestate"},
-    "phi_model": {"router": phi_model_router, "prefix": "/api"}
+    "phi_model": {"router": phi_model_router, "prefix": "/api"},
 }
 
 for service, config in service_config.items():
@@ -55,6 +60,9 @@ for service, config in service_config.items():
         print(f"✅ {service.title()} service loaded")
     except Exception as e:
         print(f"❌ Failed to load {service} service: {str(e)}")
+
+# === Register Chatbot Blueprint ===
+app.include_router(chatbot_bp, prefix="/chatbot")
 
 # === Health Check ===
 @app.get("/api/health")
@@ -70,18 +78,19 @@ async def health_check():
 @app.get("/")
 async def root():
     return {
-        "message": "AI Financial Advisor API",
+        "message": "✅ AI Financial Advisor API is live",
         "version": app.version,
         "documentation": "/api/docs"
     }
 
+# === Run with SSL if executed directly ===
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
         port=8000,
-        reload=False,  # Disable reload for performance
+        reload=False,
         ssl_keyfile="./localhost-key.pem",
         ssl_certfile="./localhost.pem"
     )
