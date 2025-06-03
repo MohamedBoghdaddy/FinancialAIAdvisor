@@ -4,8 +4,6 @@ import { AuthProvider } from "./context/AuthContext";
 import Chatbot from "./Frontend/components/Pages/Chatbot.js";
 
 // Tools
-
-
 import ProfileCardPage from "./Frontend/components/Dashboard/pages/ProfileCardPage";
 import CalendarExpenseTracker from "./Frontend/components/Dashboard/pages/CalendarExpenseTracker";
 import FinanceTools from "./Frontend/components/Dashboard/tools/FinanceTools";
@@ -28,7 +26,6 @@ import AnalyticsReport from "./Frontend/components/Dashboard/analytics";
 import FinancialReportPage from "./Frontend/components/Dashboard/pages/FinancialReport";
 import AdminDashboard from "./Frontend/components/Dashboard/admin/AdminDashboard.js";
 import UserDetails from "./Frontend/components/Dashboard/admin/UserDetails";
-
 
 import AIChat from "./Frontend/components/chatbot/AIChat";
 import Contact from "./Frontend/components/Contact/contact";
@@ -175,7 +172,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-         
           <Route
             path="/dashboard/tabs"
             element={
@@ -202,6 +198,57 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/profile-card"
+            element={
+              <ProtectedRoute>
+                <>
+                  <MiniNavbar />
+                  <Sidebar />
+                  <ProfileCardPage />
+                  <Footer />
+                </>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/expenses"
+            element={
+              <ProtectedRoute>
+                <>
+                  <MiniNavbar />
+                  <Sidebar />
+                  <CalendarExpenseTracker />
+                </>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/finance"
+            element={
+              <ProtectedRoute>
+                <>
+                  <MiniNavbar />
+                  <Sidebar />
+                  <FinanceTools />
+                  <Footer />
+                </>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/FinanceTools"
+            element={
+              <ProtectedRoute>
+                <>
+                  <MiniNavbar />
+                  <Sidebar />
+                  <FinanceTools />
+                  <Footer />
+                </>
+              </ProtectedRoute>
+            }
+          />
 
           {/* Admin Routes */}
           <Route
@@ -220,63 +267,7 @@ function App() {
               </AdminRoute>
             }
           />
-            <Route
-            path="/profile-card"
-            element={
-              <ProtectedRoute>
-                <>
-                  <MiniNavbar />
-                  <Sidebar />
-                  <ProfileCardPage />
-                  <Footer />
-                </>
-              </ProtectedRoute>
-            }
-          />
-        <Route
-  path="/expenses"
-  element={
-    <ProtectedRoute>
-      <>
-        <MiniNavbar />
-        <Sidebar />
-        <CalendarExpenseTracker />
-  
-      </>
-    </ProtectedRoute>
-  }
-/>
-
-              <Route
-  path="/finance"
-  element={
-    <ProtectedRoute>
-      <>
-        <MiniNavbar />
-        <Sidebar />
-       <FinanceTools />
-        <Footer />
-      </>
-    </ProtectedRoute>
-  }
-/>
- <Route
-  path="/FinanceTools"
-  element={
-    <ProtectedRoute>
-      <>
-        <MiniNavbar />
-        <Sidebar />
-       <FinanceTools />
-        <Footer />
-      </>
-    </ProtectedRoute>
-  }
-/>
-  
         </Routes>
-     
-
       </BrowserRouter>
     </AuthProvider>
   );

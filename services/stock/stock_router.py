@@ -1,75 +1,25 @@
-from fastapi import FastAPI, APIRouter, Query, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import APIRouter, Query, HTTPException
 import pandas as pd
 import yfinance as yf
 import joblib
 import os
 from datetime import datetime, timedelta
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.preprocessing import MinMaxScaler
 
-# === Setup FastAPI app ===
-app = FastAPI()
 router = APIRouter(prefix="/stock", tags=["Stock"])
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 # === Config ===
-SYMBOLS = [
-    "AAPL", "META", "AMZN", "NFLX", "GOOGL",
-    "MSFT", "TSLA", "NVDA", "BRK-B", "JPM",
-    "V", "JNJ", "WMT", "UNH", "PG"
-]
-OUTPUT_DIR = "checkpoints"
-os.makedirs(OUTPUT_DIR, exist_ok=True)
+MODEL_DIR = "stock/model"
+os.makedirs(MODEL_DIR, exist_ok=True)
 
-# === Training Function ===
-def train_and_save_model(symbol: str):
-    yf_symbol = symbol.replace("-", ".")
-    df = yf.download(yf_symbol, start='2014-01-01', end=datetime.today().strftime('%Y-%m-%d'))
-
-    df = df[['Close']].copy().reset_index()
-    df.columns = ['Date', 'Close']
-    df['SMA_50'] = df['Close'].rolling(window=50).mean()
-    df['EMA_20'] = df['Close'].ewm(span=20, adjust=False).mean()
-    df = df.dropna()
-
-    scaler = MinMaxScaler()
-    df_scaled = scaler.fit_transform(df[['Close', 'SMA_50', 'EMA_20']])
-    X = df_scaled[:, 1:3]
-    y = df_scaled[:, 0]
-
-    model = RandomForestRegressor(n_estimators=100, random_state=42)
-    model.fit(X, y)
-
-    joblib.dump(model, os.path.join(OUTPUT_DIR, f"{symbol}_rf_model.pkl"))
-    joblib.dump(scaler, os.path.join(OUTPUT_DIR, f"{symbol}_scaler.pkl"))
-
-
-# === Routes ===
-@router.get("/train")
-def train_model(symbol: str = Query(...)):
-    try:
-        train_and_save_model(symbol)
-        return {"message": f"{symbol} model trained and saved."}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
+# === Prediction ===
 @router.get("/predict")
 def predict(symbol: str = Query("AAPL"), days: int = Query(15, ge=1, le=60)):
     try:
-        model_path = os.path.join(OUTPUT_DIR, f"{symbol}_rf_model.pkl")
-        scaler_path = os.path.join(OUTPUT_DIR, f"{symbol}_scaler.pkl")
+        model_path = os.path.join(MODEL_DIR, "rf_model.pkl")
+        scaler_path = os.path.join(MODEL_DIR, "rf_scaler.pkl")
 
         if not os.path.exists(model_path) or not os.path.exists(scaler_path):
-            raise HTTPException(status_code=404, detail="Model not trained yet.")
+            raise HTTPException(status_code=404, detail="Model not trained.")
 
         model = joblib.load(model_path)
         scaler = joblib.load(scaler_path)
@@ -80,6 +30,10 @@ def predict(symbol: str = Query("AAPL"), days: int = Query(15, ge=1, le=60)):
         df['EMA_20'] = df['Close'].ewm(span=20, adjust=False).mean()
         df.dropna(inplace=True)
 
+        if df.empty:
+            raise HTTPException(status_code=400, detail="Not enough data after indicators.")
+
+        latest_close = df['Close'].iloc[-1]
         sma = df['SMA_50'].iloc[-1]
         ema = df['EMA_20'].iloc[-1]
 
@@ -94,9 +48,15 @@ def predict(symbol: str = Query("AAPL"), days: int = Query(15, ge=1, le=60)):
             sma = (sma * 49 + pred_close) / 50
             ema = (ema * 19 + pred_close) / 20
 
+        final_predicted_price = predictions[-1][1]
+        predicted_return_pct = ((final_predicted_price - latest_close) / latest_close) * 100
+
         return {
             "symbol": symbol,
             "days": days,
+            "latest_close": round(latest_close, 2),
+            "final_prediction": round(final_predicted_price, 2),
+            "predicted_return_pct": round(predicted_return_pct, 2),
             "dates": [d[0] for d in predictions],
             "predicted": [round(d[1], 2) for d in predictions]
         }
@@ -105,6 +65,7 @@ def predict(symbol: str = Query("AAPL"), days: int = Query(15, ge=1, le=60)):
         raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
 
 
+# === Historical ===
 @router.get("/historical")
 def historical(symbol: str = Query("AAPL"), period: str = Query("1y")):
     try:
@@ -123,26 +84,23 @@ def historical(symbol: str = Query("AAPL"), period: str = Query("1y")):
         df = yf.download(symbol, start=start, end=end)
         df = df[['Close']].reset_index()
         df['Date'] = pd.to_datetime(df['Date']).dt.strftime('%Y-%m-%d')
-
         return {"symbol": symbol, "data": df.to_dict(orient="records")}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# === Metrics ===
 @router.get("/metrics")
 def metrics(symbol: str = Query("AAPL")):
     try:
-        model = joblib.load(os.path.join(OUTPUT_DIR, f"{symbol}_rf_model.pkl"))
-        scaler = joblib.load(os.path.join(OUTPUT_DIR, f"{symbol}_scaler.pkl"))
+        model = joblib.load(os.path.join(MODEL_DIR, "rf_model.pkl"))
+        scaler = joblib.load(os.path.join(MODEL_DIR, "rf_scaler.pkl"))
         return {
-            "model": f"Random Forest - {symbol}",
+            "model": "Random Forest",
+            "symbol": symbol,
             "n_estimators": model.n_estimators,
             "max_depth": model.max_depth,
             "feature_range": scaler.feature_range,
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Metrics error: {str(e)}")
-
-
-# ✅ Attach router
-app.include_router(router)
