@@ -4,12 +4,13 @@ import { AuthProvider } from "./context/AuthContext";
 import Chatbot from "./Frontend/components/Pages/Chatbot.js";
 
 // Tools
-import LoanCalculator from "./Frontend/components/Dashboard/tools/LoanCalculator";
-import NetWorthCalculator from "./Frontend/components/Dashboard/tools/NetWorthCalculator";
+
 
 import ProfileCardPage from "./Frontend/components/Dashboard/pages/ProfileCardPage";
 import CalendarExpenseTracker from "./Frontend/components/Dashboard/pages/CalendarExpenseTracker";
 import FinanceTools from "./Frontend/components/Dashboard/tools/FinanceTools";
+import CurrencyConverter from "./Frontend/components/Dashboard/tools/CurrencyConverter";
+
 // Frontend Components
 import Home from "./Frontend/components/Home/home";
 import NavBar from "./Frontend/components/Home/Navbar";
