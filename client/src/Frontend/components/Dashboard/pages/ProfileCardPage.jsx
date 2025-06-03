@@ -4,6 +4,7 @@ import { BsPersonCircle } from "react-icons/bs";
 import "../../styles/viewprofile.css";
 import { toast } from "react-toastify";
 
+
 // ⚙️ Reference question metadata for field types/options only
 const questionMeta = {
   age: { type: "number", min: 18, max: 120 },

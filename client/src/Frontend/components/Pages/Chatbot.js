@@ -1,65 +1,94 @@
-import React, { useState } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import axios from "axios";
 import "../styles/chhat.css";
-import { useAuthContext } from "../../../context/AuthContext";
+import { DashboardContext } from "../../../context/DashboardContext";
 
 const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5001";
 
 const Chatbot = () => {
+  const dashboardContext = useContext(DashboardContext);
+  const profile = dashboardContext?.profile || {};
+  const fetchProfile = dashboardContext?.actions?.fetchProfile;
+
   const [goal, setGoal] = useState("investment");
-  const { state } = useAuthContext();
-  const { user, isAuthenticated } = state;
-
-  const [profile, setProfile] = useState({
-    income: 10000,
-    rent: 2000,
-    utilities: 800,
-    dietPlan: "Moderate",
-    transportCost: 500,
-    otherRecurring: 1000,
-    savingAmount: 2000,
-    customExpenses: [],
-    modelPredictions: {
-      gold: "6%",
-      stocks: "9%",
-      real_estate: "4%"
-    },
-    marketVolatility: {
-      gold: "0.02",
-      stocks: "0.06",
-      real_estate: "0.01"
-    }
-  });
-
   const [messages, setMessages] = useState([
     {
       sender: "bot",
-      text: "Hi! I'm your AI Financial Advisor. What would you like help with?"
-    }
+      text: "Hi! I'm your AI Financial Advisor. What would you like help with?",
+    },
   ]);
   const [loading, setLoading] = useState(false);
+  const [inputText, setInputText] = useState("");
+
+  // 🔁 Fetch profile if not already available
+  useEffect(() => {
+    if (!profile || Object.keys(profile).length === 0) {
+      fetchProfile?.();
+    }
+  }, [fetchProfile, profile]);
 
   const sendProfile = async () => {
+    if (!profile || Object.keys(profile).length === 0) {
+      setMessages((prev) => [
+        ...prev,
+        { sender: "bot", text: "⚠️ Please complete your profile first." },
+      ]);
+      return;
+    }
+
     setLoading(true);
-    setMessages(prev => [
+    setMessages((prev) => [
       ...prev,
-      { sender: "user", text: `Give me a ${goal.replace("_", " ")}.` }
+      { sender: "user", text: `Give me a ${goal.replace("_", " ")}.` },
     ]);
 
-    const endpoint = `${API_URL}/chatbot/generate/${goal === "life_management" ? "life" : "investment"}`;
+    const endpoint = `${API_URL}/chatbot/generate/${
+      goal === "life_management" ? "life" : "investment"
+    }`;
 
     try {
       const res = await axios.post(endpoint, profile);
       const formatted = JSON.stringify(res.data, null, 2);
-      setMessages(prev => [...prev, { sender: "bot", text: formatted }]);
+      setMessages((prev) => [...prev, { sender: "bot", text: formatted }]);
     } catch (err) {
       console.error(err);
-      setMessages(prev => [
+      setMessages((prev) => [
         ...prev,
-        { sender: "bot", text: "❌ Something went wrong. Please try again." }
+        {
+          sender: "bot",
+          text: "❌ Something went wrong while sending the profile.",
+        },
       ]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const sendFreeText = async () => {
+    if (!inputText.trim()) return;
+
+    setMessages((prev) => [...prev, { sender: "user", text: inputText }]);
+    setLoading(true);
+
+    try {
+      const res = await axios.post(`${API_URL}/chatbot/chat`, {
+        message: inputText,
+        profile: profile,
+      });
+      const formatted = res.data?.output || "🤖 No response.";
+      setMessages((prev) => [...prev, { sender: "bot", text: formatted }]);
+    } catch (err) {
+      console.error(err);
+      setMessages((prev) => [
+        ...prev,
+        {
+          sender: "bot",
+          text: "❌ Something went wrong while sending your message.",
+        },
+      ]);
+    } finally {
+      setLoading(false);
+      setInputText("");
     }
   };
 
@@ -82,6 +111,19 @@ const Chatbot = () => {
           <option value="life_management">Life Management Plan</option>
         </select>
         <button onClick={sendProfile} disabled={loading}>
+          Generate Plan
+        </button>
+      </div>
+
+      <div className="chat-input-area">
+        <input
+          type="text"
+          placeholder="Ask a question..."
+          value={inputText}
+          onChange={(e) => setInputText(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && sendFreeText()}
+        />
+        <button onClick={sendFreeText} disabled={loading}>
           Send
         </button>
       </div>

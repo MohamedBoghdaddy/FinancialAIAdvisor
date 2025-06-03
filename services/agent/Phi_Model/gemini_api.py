@@ -10,6 +10,7 @@ CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}})
 genai.configure(api_key="AIzaSyByzGIAbMmpEz8BaI9FTx6LTBfmBVFouTk")
 model = genai.GenerativeModel("gemini-1.5-flash")
 
+
 def build_prompt(user_input, goal):
     income = user_input.get("income", "0")
     rent = user_input.get("rent", "0")

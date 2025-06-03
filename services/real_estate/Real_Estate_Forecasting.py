@@ -11,6 +11,7 @@ import warnings
 import json
 from tensorflow import keras
 import datetime
+import xgboost as xgb
 
 Sequential = keras.models.Sequential
 Dense = keras.layers.Dense
@@ -19,6 +20,50 @@ warnings.filterwarnings('ignore')
 
 def log(message):
     print(f"[{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] DEBUG: {message}")
+
+def normalized_evaluation(y_true, y_pred, model_name):
+    """Helper function to calculate and log evaluation metrics"""
+    mae = mean_absolute_error(y_true, y_pred)
+    rmse = np.sqrt(mean_squared_error(y_true, y_pred))
+    r2 = r2_score(y_true, y_pred)
+    
+    log(f"{model_name} Metrics - MAE: {mae:.2f}, RMSE: {rmse:.2f}, R2: {r2:.2f}")
+    
+    return {
+        "MAE": mae,
+        "RMSE": rmse,
+        "R2": r2,
+        "Forecast": y_pred.tolist() if isinstance(y_pred, np.ndarray) else list(y_pred)
+    }
+
+def run_xgboost(train_df, test_df, y_train, y_test):
+    log("Running XGBoost...")
+    # Prepare features - using Days_Since_Start and Area as features
+    train_df['Days_Since_Start'] = (train_df.index - train_df.index[0]).days
+    test_df['Days_Since_Start'] = (test_df.index - test_df.index[0]).days
+    
+    X_train = train_df[['Days_Since_Start', 'Area']].fillna(0)
+    X_test = test_df[['Days_Since_Start', 'Area']].fillna(0)
+
+    # Train model
+    model = xgb.XGBRegressor(objective="reg:squarederror", n_estimators=100)
+    model.fit(X_train, y_train)
+
+    # Predict
+    test_pred = model.predict(X_test)
+
+    # Evaluate
+    metrics = normalized_evaluation(y_test, test_pred, "XGBoost")
+
+    # Compute Predicted Return
+    current_price = y_test.iloc[-1]  # Last actual price
+    predicted_price = test_pred[-1]  # Last predicted price
+    predicted_return = ((predicted_price - current_price) / current_price) * 100
+
+    log(f"Predicted Real Estate Return: {predicted_return:.2f}%")
+    metrics["predicted_return"] = f"{predicted_return:.2f}%"
+
+    return metrics
 
 log("Loading dataset...")
 df = pd.read_csv('./egypt_House_prices.csv')
@@ -39,27 +84,22 @@ train_size = int(len(target) * 0.7)
 val_size = int(len(target) * 0.15)
 train, val, test = target[:train_size], target[train_size:train_size+val_size], target[train_size+val_size:]
 
+# Split the dataframe similarly
+train_df = df[:train_size]
+val_df = df[train_size:train_size+val_size]
+test_df = df[train_size+val_size:]
+
 # === ARIMA
 log("Running ARIMA...")
 arima_model = ARIMA(train, order=(1,1,1)).fit()
 arima_pred = arima_model.forecast(steps=len(test))
-arima_metrics = {
-    "MAE": mean_absolute_error(test, arima_pred),
-    "RMSE": np.sqrt(mean_squared_error(test, arima_pred)),
-    "R2": r2_score(test, arima_pred),
-    "Forecast": arima_pred.tolist()
-}
+arima_metrics = normalized_evaluation(test, arima_pred, "ARIMA")
 
 # === SARIMA
 log("Running SARIMA...")
 sarima_model = SARIMAX(train, order=(1,1,1), seasonal_order=(1,1,1,12)).fit(disp=False)
 sarima_pred = sarima_model.forecast(steps=len(test))
-sarima_metrics = {
-    "MAE": mean_absolute_error(test, sarima_pred),
-    "RMSE": np.sqrt(mean_squared_error(test, sarima_pred)),
-    "R2": r2_score(test, sarima_pred),
-    "Forecast": sarima_pred.tolist()
-}
+sarima_metrics = normalized_evaluation(test, sarima_pred, "SARIMA")
 
 # === Prophet
 log("Running Prophet...")
@@ -69,12 +109,7 @@ prophet_model.fit(prophet_data)
 future = prophet_model.make_future_dataframe(periods=len(test))
 forecast = prophet_model.predict(future)
 prophet_pred = forecast[-len(test):]['yhat'].values
-prophet_metrics = {
-    "MAE": mean_absolute_error(test, prophet_pred),
-    "RMSE": np.sqrt(mean_squared_error(test, prophet_pred)),
-    "R2": r2_score(test, prophet_pred),
-    "Forecast": prophet_pred.tolist()
-}
+prophet_metrics = normalized_evaluation(test, prophet_pred, "Prophet")
 
 # === LSTM
 log("Running LSTM...")
@@ -106,12 +141,10 @@ model.fit(X_train, y_train, validation_data=(X_val, y_val), epochs=10, batch_siz
 pred_scaled = model.predict(X_test)
 predicted = scaler.inverse_transform(pred_scaled)
 
-lstm_metrics = {
-    "MAE": mean_absolute_error(test.values[60:], predicted.flatten()),
-    "RMSE": np.sqrt(mean_squared_error(test.values[60:], predicted.flatten())),
-    "R2": r2_score(test.values[60:], predicted.flatten()),
-    "Forecast": predicted.flatten().tolist()
-}
+lstm_metrics = normalized_evaluation(test.values[60:], predicted.flatten(), "LSTM")
+
+# === XGBoost
+xgboost_metrics = run_xgboost(train_df, test_df, train, test)
 
 # === Save Everything
 log("Saving metrics and model...")
@@ -119,11 +152,22 @@ results = {
     "ARIMA": arima_metrics,
     "SARIMA": sarima_metrics,
     "Prophet": prophet_metrics,
-    "LSTM": lstm_metrics
+    "LSTM": lstm_metrics,
+    "XGBoost": xgboost_metrics
 }
 with open("REAL_forecast_results.json", "w") as f:
     json.dump(results, f, indent=4)
 
 model.save("REAL_lstm_forecast_model.keras")
-log(f"✅ Best model: {'LSTM' if lstm_metrics['RMSE'] == min([arima_metrics['RMSE'], sarima_metrics['RMSE'], prophet_metrics['RMSE'], lstm_metrics['RMSE']]) else 'Unknown'}")
+
+# Determine best model
+all_models = {
+    "ARIMA": arima_metrics['RMSE'],
+    "SARIMA": sarima_metrics['RMSE'],
+    "Prophet": prophet_metrics['RMSE'],
+    "LSTM": lstm_metrics['RMSE'],
+    "XGBoost": xgboost_metrics['RMSE']
+}
+best_model = min(all_models, key=all_models.get)
+log(f"✅ Best model: {best_model} with RMSE: {all_models[best_model]:.2f}")
 log("All forecasting complete.")
