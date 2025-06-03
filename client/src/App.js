@@ -1,6 +1,7 @@
 import React from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
+import Chatbot from "./Frontend/components/Pages/Chatbot.js";
 
 // Tools
 
@@ -26,7 +27,7 @@ import CurrencyConverter from "./Frontend/components/Dashboard/tools/CurrencyCon
 import AdminDashboard from "./Frontend/components/Dashboard/admin/AdminDashboard.js";
 import UserDetails from "./Frontend/components/Dashboard/admin/UserDetails";
 
-import Chatbot from "./Frontend/components/chatbot/chatbot";
+
 import AIChat from "./Frontend/components/chatbot/AIChat";
 import Contact from "./Frontend/components/Contact/contact";
 import TabsView from "./Frontend/components/Dashboard/tabs/Tabs.jsx";
@@ -257,6 +258,20 @@ function App() {
     </ProtectedRoute>
   }
 />
+ <Route
+  path="/FinanceTools"
+  element={
+    <ProtectedRoute>
+      <>
+        <MiniNavbar />
+        <Sidebar />
+       <FinanceTools />
+        <Footer />
+      </>
+    </ProtectedRoute>
+  }
+/>
+  
         </Routes>
      
 

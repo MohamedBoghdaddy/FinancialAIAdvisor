@@ -232,7 +232,12 @@ const Sidebar = () => {
     Finance Tools
   </Link>
 </li>
-
+<li>
+  <Link to="/chatbot">
+    <i className="sidebar-icon">🤖</i>
+    AI Chatbot
+  </Link>
+</li>
       </ul>
     </div>
   );

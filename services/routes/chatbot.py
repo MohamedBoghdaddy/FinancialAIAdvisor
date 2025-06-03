@@ -1,15 +1,17 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
+from flask import Blueprint, request, jsonify
 import google.generativeai as genai
 import json
+import os
 
-app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}})
+chatbot_bp = Blueprint("chatbot", __name__)
 
-# ✅ Configure Gemini
-genai.configure(api_key="AIzaSyByzGIAbMmpEz8BaI9FTx6LTBfmBVFouTk")
+# ✅ Load Gemini API key from environment variable
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
+# ✅ Use Gemini Flash model
 model = genai.GenerativeModel("gemini-1.5-flash")
 
+# ✅ Prompt builder
 def build_prompt(user_input, goal):
     income = user_input.get("income", "0")
     rent = user_input.get("rent", "0")
@@ -52,14 +54,8 @@ def build_prompt(user_input, goal):
     )
     return prompt
 
-@app.route("/generate/investment", methods=["POST"])
-def generate_investment():
-    return generate_advice(goal="investment")
-
-@app.route("/generate/life", methods=["POST"])
-def generate_life():
-    return generate_advice(goal="life_management")
-
+# ✅ Main endpoint
+@chatbot_bp.route("/generate/<goal>", methods=["POST"])
 def generate_advice(goal):
     try:
         user_input = request.get_json()
@@ -67,6 +63,7 @@ def generate_advice(goal):
         response = model.generate_content(prompt)
         result_text = response.text
 
+        # Try to parse the result into clean JSON
         try:
             cleaned = result_text.strip().removeprefix("```json").removesuffix("```").strip()
             result_json = json.loads(cleaned)
@@ -76,6 +73,3 @@ def generate_advice(goal):
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-if __name__ == "__main__":
-    app.run(port=5001)

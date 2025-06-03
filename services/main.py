@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
+from routes.chatbot import chatbot_bp
 # === Routers ===
 from stock.stock_router import router as stock_router
 from gold.gold_router import router as gold_router
@@ -30,7 +30,7 @@ app.include_router(stock_router, prefix="/stock", tags=["Stock"])
 app.include_router(gold_router, prefix="/gold", tags=["Gold"])
 app.include_router(real_estate_router, prefix="/realestate", tags=["Real Estate"])
 app.include_router(phi_model_router, prefix="/phi-model", tags=["Phi-Model"])
-
+app.register_blueprint(chatbot_bp, url_prefix="/chatbot")
 # === Root Endpoint ===
 @app.get("/")
 def root():
