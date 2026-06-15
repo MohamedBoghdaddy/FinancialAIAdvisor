@@ -54,7 +54,9 @@ export const useSignup = () => {
 
       const { user, token } = response.data;
 
-      localStorage.setItem("user", JSON.stringify({ user, token }));
+      localStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem("token", token);
+      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
       dispatch({ type: "LOGIN_SUCCESS", payload: user });
 

@@ -1,4 +1,6 @@
-from fastapi import APIRouter, FastAPI, HTTPException, Query
+from typing import Optional
+
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 import json
 import numpy as np
@@ -10,16 +12,25 @@ import os
 
 router = APIRouter()
 
+DISCLAIMER = "Forecasts are educational estimates, not financial advice."
+
 # === Response Schemas ===
 class ForecastResponse(BaseModel):
     model: str
     forecast: list[float]
 
-class MetricResponse(BaseModel):
+class ModelMetrics(BaseModel):
     model: str
-    MAE: float
-    RMSE: float
-    R2: float
+    MAE: Optional[float] = None
+    RMSE: Optional[float] = None
+    R2: Optional[float] = None
+    status: str = "ok"
+
+class MetricsResponse(BaseModel):
+    asset: str = "real_estate"
+    models: list[ModelMetrics]
+    best_model: Optional[str] = None
+    disclaimer: str = DISCLAIMER
 
 class BestModelResponse(BaseModel):
     model: str
@@ -48,15 +59,17 @@ def get_forecasts():
         raise HTTPException(status_code=500, detail=f"Forecast error: {str(e)}")
 
 # === /realestate/metrics ===
-@router.get("/metrics", response_model=list[MetricResponse])
+@router.get("/metrics", response_model=MetricsResponse)
 def get_metrics():
     try:
         with open("data/REAL_forecast_results.json", "r") as f:
             results = json.load(f)
-        return [
-            MetricResponse(model=model, MAE=data["MAE"], RMSE=data["RMSE"], R2=data["R2"])
+        models = [
+            ModelMetrics(model=model, MAE=data["MAE"], RMSE=data["RMSE"], R2=data["R2"])
             for model, data in results.items()
         ]
+        best = min(results.items(), key=lambda x: x[1]["RMSE"])
+        return MetricsResponse(asset="real_estate", models=models, best_model=best[0])
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Metric error: {str(e)}")
 
@@ -128,7 +141,3 @@ def get_predicted_return():
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Return calculation error: {str(e)}")
-
-# === Standalone App ===
-app = FastAPI(title="🏡 Real Estate Forecast API")
-app.include_router(router, prefix="/realestate", tags=["Real Estate"])

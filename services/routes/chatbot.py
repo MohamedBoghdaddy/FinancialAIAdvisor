@@ -1,67 +1,99 @@
-from flask import Blueprint, request, jsonify
-import google.generativeai as genai
+"""Gemini-backed financial chat assistant.
+
+Converted from a Flask Blueprint to a FastAPI APIRouter so it can be mounted
+directly on the FastAPI app in main.py (the previous Flask Blueprint could
+not be registered via app.include_router and would crash on startup).
+"""
 import json
 import os
 
-# ✅ Define Blueprint
-chatbot_bp = Blueprint("chatbot", __name__)
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 
-# ✅ Configure Gemini API
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-model = genai.GenerativeModel("gemini-1.5-flash")
+router = APIRouter(tags=["Chatbot"])
 
-# ✅ Utility: Load AI model predictions and volatility
+DISCLAIMER = (
+    "This information is for educational and planning purposes only and is "
+    "not financial advice. Consult a licensed financial advisor before "
+    "making investment decisions."
+)
+
+_genai_model = None
+
+
+def _get_genai_model():
+    """Lazily configure and return the Gemini model, or None if unavailable."""
+    global _genai_model
+    if _genai_model is not None:
+        return _genai_model
+
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        return None
+
+    import google.generativeai as genai
+
+    genai.configure(api_key=api_key)
+    _genai_model = genai.GenerativeModel("gemini-1.5-flash")
+    return _genai_model
+
+
 def load_ai_insights():
+    """Load cached model predictions / volatility, if available."""
     try:
         with open("ai_insights.json", "r") as f:
             data = json.load(f)
         return data.get("predicted_returns", {}), data.get("market_volatility", {})
-    except Exception as e:
-        print("❌ Failed to load AI insights:", e)
+    except Exception:
         return {}, {}
 
-# ✅ Free-style chat endpoint (any financial question)
-@chatbot_bp.route("/chat", methods=["POST"])
-def chat_with_bot():
-    try:
-        data = request.get_json()
-        user_message = data.get("message", "")
-        profile = data.get("profile", {})
 
-        prompt = f"""
+class ChatRequest(BaseModel):
+    message: str
+    profile: dict = {}
+
+
+@router.post("/chat")
+def chat_with_bot(payload: ChatRequest):
+    model = _get_genai_model()
+    if model is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Chat assistant is not configured (missing GEMINI_API_KEY).",
+        )
+
+    prompt = f"""
 You are an AI financial advisor.
 
-🛑 If the user's question is not related to personal finance, budgeting, saving, investing, or financial planning,
+If the user's question is not related to personal finance, budgeting, saving, investing, or financial planning,
 respond ONLY with:
 "I'm a financial advisor, so I can't help you with that topic. Please ask me something about your finances."
 
-✅ Otherwise, respond as a warm, expert financial coach using the profile below.
+Otherwise, respond as a warm, expert financial coach using the profile below.
 
 User Message:
-"{user_message}"
+"{payload.message}"
 
 User Profile:
-{json.dumps(profile, indent=2)}
+{json.dumps(payload.profile, indent=2)}
 
-❌ Never use JSON, markdown, or bullet points.
-✅ Only reply with full-text natural human-like advice.
+Never use JSON, markdown, or bullet points.
+Only reply with full-text natural human-like advice, and remind the user that this is educational guidance, not financial advice.
 """
 
+    try:
         response = model.generate_content(prompt)
-        return jsonify({"output": response.text.strip()})
-
+        return {"output": response.text.strip(), "disclaimer": DISCLAIMER}
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        raise HTTPException(status_code=500, detail=str(e))
 
-# ✅ Structured prompt builder for goal-specific planning
-def build_prompt(user_input, goal):
-    # Inject predictions if missing
+
+def build_prompt(user_input: dict, goal: str) -> str:
     if "modelPredictions" not in user_input or "marketVolatility" not in user_input:
         predictions, volatility = load_ai_insights()
         user_input["modelPredictions"] = predictions
         user_input["marketVolatility"] = volatility
 
-    # Extract profile data
     income = user_input.get("salary", "0")
     utilities = user_input.get("utilities", "0")
     diet = user_input.get("dietPlan", "Not Provided")
@@ -77,28 +109,30 @@ def build_prompt(user_input, goal):
     home = user_input.get("homeOwnership", "Not Provided")
 
     prompt = (
-        "🛑 IMPORTANT: You are a financial advisor AI.\n"
+        "IMPORTANT: You are a financial advisor AI.\n"
         "If the user's question is NOT related to financial planning, budgeting, saving, or investments,\n"
-        "then respond with: \"I'm a financial advisor, so I can’t help you with that topic. Please ask me something about your finances.\"\n\n"
+        "then respond with: \"I'm a financial advisor, so I can't help you with that topic. Please ask me something about your finances.\"\n\n"
 
         "Otherwise, continue with the following instructions:\n\n"
 
-        "STEP 1 — Assess user's financial health:\n"
+        "STEP 1 - Assess user's financial health:\n"
         "- Are they overspending?\n"
         "- Can they afford to invest?\n"
         "- What is their risk tolerance?\n\n"
 
-        "STEP 2 — Provide advice based on goal:\n"
+        "STEP 2 - Provide guidance based on goal:\n"
 
-        "👉 If goal is 'investment':\n"
-        "- Recommend ONLY ONE: stocks, gold, OR real estate (no comparisons).\n"
-        "- Base your decision on income, expenses, savings, risk score, and predicted returns.\n\n"
+        "If goal is 'investment':\n"
+        "- Discuss ONE asset class that fits best: stocks, gold, OR real estate (no side-by-side comparisons).\n"
+        "- Base your reasoning on income, expenses, savings, risk score, and predicted returns.\n"
+        "- Frame this as an educational estimate, not a guarantee or instruction to buy/sell.\n\n"
 
-        "👉 If goal is 'life_management':\n"
+        "If goal is 'life_management':\n"
         "- Share 3 practical money management tips (saving, budgeting, cutting costs).\n\n"
 
-        "✅ Respond like a real human advisor.\n"
-        "❌ NEVER use markdown, code, or bullet points.\n\n"
+        "Respond like a real human advisor.\n"
+        "NEVER use markdown, code, or bullet points.\n"
+        "End with a brief reminder that this is educational, not financial advice.\n\n"
 
         f"User Goal: {goal}\n\n"
         f"- Salary: {income} EGP\n"
@@ -117,18 +151,24 @@ def build_prompt(user_input, goal):
         "".join([f"- {k.capitalize()}: {v}\n" for k, v in predictions.items()]) +
         "\nMarket Volatility:\n" +
         "".join([f"- {k.capitalize()}: {v}\n" for k, v in volatility.items()]) +
-        "\n\nGive your recommendation now:"
+        "\n\nGive your guidance now:"
     )
 
     return prompt
 
-# ✅ Investment or life management advice endpoint
-@chatbot_bp.route("/generate/<goal>", methods=["POST"])
-def generate_advice(goal):
+
+@router.post("/generate/{goal}")
+def generate_advice(goal: str, user_input: dict):
+    model = _get_genai_model()
+    if model is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Chat assistant is not configured (missing GEMINI_API_KEY).",
+        )
+
     try:
-        user_input = request.get_json()
         prompt = build_prompt(user_input, goal)
         response = model.generate_content(prompt)
-        return response.text.strip(), 200, {"Content-Type": "text/plain"}
+        return {"output": response.text.strip(), "disclaimer": DISCLAIMER}
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        raise HTTPException(status_code=500, detail=str(e))

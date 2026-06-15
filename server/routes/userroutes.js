@@ -9,14 +9,13 @@ import {
   updateUserProfile,
   deleteUser,
   upload,
-  toggleBlockStatus,
   updateLoginMeta,
   updateUserRoleOrPassword,
+  updateUserRole,
 } from "../controller/usercontroller.js";
 
 import { auth, authorizeRoles } from "../Middleware/authMiddleware.js";
 import User from "../models/UserModel.js";
-import { updateUserRole } from "../controller/usercontroller.js";
 
 const router = express.Router();
 
@@ -31,7 +30,7 @@ router.post("/logout", logoutUser);
  * ✅ PROTECTED ROUTES (Require user authentication)
  */
 router.get("/checkAuth", checkAuth);
-router.get("/users", auth, getAllUsers); // Only admin can use this typically
+router.get("/users", auth, authorizeRoles("admin"), getAllUsers);
 router.get("/users/:userId", auth, getUserById);
 
 router.put(
@@ -55,18 +54,18 @@ router.get("/dashboard", auth, authorizeRoles("admin", "user"), (req, res) => {
 });
 
 /**
- * ✅ ADMIN DASHBOARD ROUTES (No auth middleware for testing; add it later)
+ * ✅ ADMIN USER-MANAGEMENT ROUTES (admin role required)
  */
-router.get("/all", async (req, res) => {
+router.get("/all", auth, authorizeRoles("admin"), async (req, res) => {
   try {
-    const users = await User.find().sort({ createdAt: -1 });
+    const users = await User.find().select("-password").sort({ createdAt: -1 });
     res.json(users);
   } catch (err) {
     res.status(500).json({ message: "Error fetching users" });
   }
 });
 
-router.delete("/delete/:id", async (req, res) => {
+router.delete("/delete/:id", auth, authorizeRoles("admin"), async (req, res) => {
   try {
     const user = await User.findByIdAndDelete(req.params.id);
     if (!user) return res.status(404).json({ message: "User not found" });
@@ -76,7 +75,7 @@ router.delete("/delete/:id", async (req, res) => {
   }
 });
 
-router.put("/toggle-block/:id", async (req, res) => {
+router.put("/toggle-block/:id", auth, authorizeRoles("admin"), async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ message: "User not found" });
@@ -92,7 +91,12 @@ router.put("/toggle-block/:id", async (req, res) => {
 
 router.put("/meta/login", updateLoginMeta); // Called on login
 
-router.put("/admin/update-user/:id", updateUserRoleOrPassword);
+router.put(
+  "/admin/update-user/:id",
+  auth,
+  authorizeRoles("admin"),
+  updateUserRoleOrPassword
+);
 
 router.put(
   "/admin/update-role/:id",

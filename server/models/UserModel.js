@@ -18,20 +18,13 @@ const UserSchema = new mongoose.Schema(
       default: true,
     },
     profilePhoto: {
-      type: String,
+      type: String, // URL or path
     },
 
     blocked: {
       type: Boolean,
       default: false,
     },
-
-    blocked: {
-      type: Boolean,
-      default: false,
-    },
-
-    // models/UserModel.js
 
     lastLogin: {
       type: Date,
@@ -45,9 +38,6 @@ const UserSchema = new mongoose.Schema(
         timestamp: Date,
       },
     ],
-    profilePhoto: {
-      type: String, // URL or path
-    },
   },
   { timestamps: true }
 );

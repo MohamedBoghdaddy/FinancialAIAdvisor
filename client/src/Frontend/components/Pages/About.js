@@ -26,7 +26,7 @@ const About = () => {
             <Col lg={6}>
               <h2 className="mb-4">Our Mission</h2>
               <p>
-                At Financial AI Advisor, our mission is to democratize financial
+                At FinGenie, our mission is to democratize financial
                 advice and make it accessible to everyone. We believe that
                 financial literacy and smart money management should not be
                 privileges reserved for the wealthy, but essential tools
@@ -56,7 +56,7 @@ const About = () => {
             <Col lg={6} className="order-lg-2">
               <h2 className="mb-4">Our Story</h2>
               <p>
-                Financial AI Advisor was founded in 2023 by a team of finance
+                FinGenie was founded in 2023 by a team of finance
                 professionals and AI specialists who recognized a significant
                 gap in the market: high-quality financial advice was often
                 inaccessible to ordinary people due to high costs and minimum

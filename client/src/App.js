@@ -34,6 +34,15 @@ import TabsView from "./Frontend/components/Dashboard/tabs/Tabs.jsx";
 import ProtectedRoute from "./Frontend/components/Auth/ProtectedRoute";
 import AdminRoute from "./Frontend/components/Auth/AdminRoute";
 
+// FinGenie
+import HealthScorePage from "./Frontend/components/FinGenie/HealthScorePage";
+import ScamCheckerPage from "./Frontend/components/FinGenie/ScamCheckerPage";
+import SecurityCenterPage from "./Frontend/components/FinGenie/SecurityCenterPage";
+import ScenarioSimulatorPage from "./Frontend/components/FinGenie/ScenarioSimulatorPage";
+import ModelMetricsPage from "./Frontend/components/FinGenie/ModelMetricsPage";
+import VoiceCommandPage from "./Frontend/components/FinGenie/VoiceCommandPage";
+import AITrustCenterPage from "./Frontend/components/FinGenie/AITrustCenterPage";
+
 function App() {
   return (
     <AuthProvider>
@@ -237,19 +246,96 @@ function App() {
             }
           />
           <Route
-            path="/FinanceTools"
+            path="/health-score"
             element={
               <ProtectedRoute>
                 <>
                   <MiniNavbar />
                   <Sidebar />
-                  <FinanceTools />
+                  <HealthScorePage />
                   <Footer />
                 </>
               </ProtectedRoute>
             }
           />
-
+          <Route
+            path="/scam-checker"
+            element={
+              <ProtectedRoute>
+                <>
+                  <MiniNavbar />
+                  <Sidebar />
+                  <ScamCheckerPage />
+                  <Footer />
+                </>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/security-center"
+            element={
+              <ProtectedRoute>
+                <>
+                  <MiniNavbar />
+                  <Sidebar />
+                  <SecurityCenterPage />
+                  <Footer />
+                </>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/scenario-simulator"
+            element={
+              <ProtectedRoute>
+                <>
+                  <MiniNavbar />
+                  <Sidebar />
+                  <ScenarioSimulatorPage />
+                  <Footer />
+                </>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/model-metrics"
+            element={
+              <ProtectedRoute>
+                <>
+                  <MiniNavbar />
+                  <Sidebar />
+                  <ModelMetricsPage />
+                  <Footer />
+                </>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/voice-commands"
+            element={
+              <ProtectedRoute>
+                <>
+                  <MiniNavbar />
+                  <Sidebar />
+                  <VoiceCommandPage />
+                  <Footer />
+                </>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/ai-trust-center"
+            element={
+              <ProtectedRoute>
+                <>
+                  <MiniNavbar />
+                  <Sidebar />
+                  <AITrustCenterPage />
+                  <Footer />
+                </>
+              </ProtectedRoute>
+            }
+          />
           {/* Admin Routes */}
           <Route
             path="/admin/dashboard"

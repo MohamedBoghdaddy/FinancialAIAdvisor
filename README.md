@@ -1,131 +1,140 @@
-# Financial AI Advisor 💸🤖
+# FinGenie - AI Personal Finance Intelligence Platform
 
-Welcome to **Financial AI Advisor**! This project harnesses the power of AI to provide personalized financial advice, analyze market trends, and help users make informed financial decisions. Built on a robust tech stack with a focus on data science and machine learning, Financial AI Advisor empowers users with intelligent insights for improved financial planning.
+FinGenie helps people understand their finances using a local LLM, statistical
+analysis, and rule-based heuristics. It includes budgeting and goal-planning
+tools, forecasting models for stocks/gold/real estate, a financial health
+score, a scam/phishing checker, a security center, and a tap-to-speak voice
+command foundation.
 
-## 🚀 Project Overview
+> **FinGenie is an educational tool, not a licensed financial advisor.** It does
+> not guarantee investment returns and cannot move money, place trades, or
+> change account security settings - by voice or otherwise. See the in-app
+> "AI Trust Center" page for details.
 
-**Financial AI Advisor** is a comprehensive solution that utilizes AI and machine learning models to provide actionable financial advice. With features that range from portfolio management to risk assessment, this application is designed to cater to users’ diverse financial needs. It offers real-time financial insights, custom recommendations, and risk profiling to help users manage their assets effectively.
+## Architecture
 
-## ⚙️ Tech Stack
-- **Stack**: MERN
-- **Frontend**: React, Tailwind CSS
-- **Backend**: Node.js, Express
-- **AI & Machine Learning**: Python, TensorFlow, Scikit-Learn, Pandas
-- **Database**: MongoDB
-- **Authentication**: JSON Web Tokens (JWT)
-- **API Integration**: Integrates with third-party financial data providers for real-time information
+The project has three parts:
 
-## 🔋 Features
+| Folder | Stack | Purpose |
+| --- | --- | --- |
+| `client/` | React | Web frontend |
+| `server/` | Node.js / Express / MongoDB | Auth, user data, audit logging, security & voice command APIs, proxy to `services/` |
+| `services/` | Python / FastAPI | Forecasting models (stock, gold, real estate), local LLM (Qwen2.5-1.5B-Instruct), data science endpoints, scam/phishing heuristics |
 
-- **Portfolio Management**: Allows users to manage and analyze their investment portfolios with automated insights.
-- **Risk Assessment**: Uses machine learning to assess the user's risk tolerance and tailor financial advice accordingly.
-- **Market Analysis**: Provides up-to-date analysis of stocks, forex, and cryptocurrency markets using real-time data.
-- **Recommendation System**: Suggests investment opportunities based on market trends, user goals, and risk tolerance.
-- **Financial News Feed**: Aggregates the latest financial news from trusted sources to keep users informed about market developments.
-- **User Authentication**: Secure sign-up and login using JWT, ensuring data security and user privacy.
-- **Data Visualization**: Interactive charts and graphs for tracking investment growth, portfolio allocation, and market performance.
+## Getting Started
 
-## 📈 Machine Learning Models
+### Prerequisites
 
-- **Sentiment Analysis**: Analyzes news sentiment to gauge market sentiment and its potential impact on financial assets.
-- **Time Series Analysis**: Predicts stock price trends using historical data, helping users understand possible future movements.
-- **Clustering**: Groups similar financial assets to identify patterns and aid in portfolio diversification.
-- **Recommendation Algorithm**: Provides personalized investment recommendations based on user profile and market trends.
+- Node.js 18+
+- Python 3.11+
+- MongoDB (local or Atlas)
 
-## 📊 Data Sources
-
-Financial AI Advisor integrates data from multiple APIs, ensuring users have access to:
-- **Real-time Stock Prices**
-- **Forex and Cryptocurrency Data**
-- **Economic Indicators**
-- **Financial News and Market Sentiment**
-
-## 🛠️ Installation and Setup
-
-To get started with Financial AI Advisor, follow these steps:
-
-### 1. Clone the Repository
+### 1. Clone the repository
 
 ```bash
 git clone https://github.com/MohamedBoghdaddy/FinancialAIAdvisor.git
 cd FinancialAIAdvisor
 ```
 
-### 2. Install Backend Dependencies
+### 2. Configure environment variables
+
+Each subproject has a `.env.example` file. Copy it to `.env` and fill in real
+values:
 
 ```bash
-cd backend
-npm install
+cp server/.env.example server/.env
+cp services/.env.example services/.env
+cp client/.env.example client/.env
 ```
 
-### 3. Install Frontend Dependencies
+At minimum, set `JWT_SECRET` and `MONGO_URL` in `server/.env` (and the same
+`JWT_SECRET` in `services/.env`, since the FastAPI service verifies tokens
+issued by the Node server).
+
+### 3. Install dependencies
 
 ```bash
+# Backend (Node)
+cd server
+npm install
+
+# Frontend
 cd ../client
 npm install
+
+# AI/ML services (Python)
+cd ../services
+pip install -r requirements.txt
 ```
 
-### 4. Configure Environment Variables
+### 4. Run the apps
 
-Create a `.env` file in the root of both the backend and frontend directories with the following variables:
+```bash
+# Terminal 1 - Node API (http://localhost:4000)
+cd server
+npm run dev
 
-#### Backend `.env`
+# Terminal 2 - FastAPI services (http://localhost:8000)
+cd services
+uvicorn main:app --reload
 
-```env
-PORT=4000
-MONGO_URI=your_mongodb_uri
-JWT_SECRET=your_jwt_secret
-API_KEY=your_financial_api_key
+# Terminal 3 - React frontend (http://localhost:3000)
+cd client
+npm start
 ```
 
-#### Frontend `.env`
+## Key Features
 
-```env
-REACT_APP_API_URL=http://localhost:4000
-```
+### Financial planning & forecasting
+- Goal planning with milestone suggestions (Qwen2.5-1.5B-Instruct)
+- Stock, gold, and real estate forecasting models with a `/metrics` endpoint
+  reporting real backtest MAE/RMSE/R2 (no placeholder values)
+- **Financial Health Score** - a transparent, weighted score based on savings
+  rate, expense-to-income ratio, and emergency fund coverage
+- **Scenario Simulator** - month-by-month projection of savings under
+  different income/expense/return assumptions
 
-### 5. Start the Application
+### Cyber-finance protection
+- **Scam & Phishing Checker** - heuristic analysis of messages and links for
+  common scam patterns (urgency language, credential/money requests,
+  suspicious URLs/TLDs)
+- **Security Center** - account security score, recent activity (audit log),
+  and an admin-only platform security overview
 
-- Start the backend server:
+### Voice commands (foundation)
+- Tap-to-speak only - no always-listening mode
+- Commands are classified by risk level (low/medium/high) using the local LLM
+  plus a deterministic safety backstop
+- Medium-risk actions require confirmation; high-risk actions (money
+  movement, security changes) are always blocked
 
-  ```bash
-  cd backend
-  nodemon server.js
-  ```
+### AI Trust Center
+A dedicated in-app page explaining what FinGenie can and cannot do, how
+metrics and heuristics work, and their limitations.
 
-- Start the frontend server:
+## API Overview
 
-  ```bash
-  cd client
-  npm start
-  ```
+| Service | Base path | Notes |
+| --- | --- | --- |
+| Node | `/api/users`, `/api/profile`, `/api/security`, `/api/voice`, `/api/loan`, `/api/expenses`, `/api/currency` | Auth-gated, talks to MongoDB |
+| FastAPI | `/api/stock`, `/api/gold`, `/api/realestate` | Forecasting + `/metrics` |
+| FastAPI | `/api/llm` | Qwen2.5-1.5B-Instruct: `/generate`, `/financial-advice`, `/intent`, `/scam-check` |
+| FastAPI | `/api/ds` | Financial health score, anomaly detection, scenario simulation, segmentation |
+| FastAPI | `/api/security` | Scam/phishing heuristics |
+| FastAPI | `/chatbot` | Gemini-based chat (optional, requires `GEMINI_API_KEY`) |
 
-The frontend should now be running on `http://localhost:3000` and the backend on `http://localhost:4000`.
+Interactive API docs are available at `http://localhost:8000/api/docs` once
+the FastAPI service is running.
 
-## 🧩 Usage
+## Contributing
 
-1. **Create an Account**: Sign up or log in using the secure authentication system.
-2. **Connect Portfolio**: Link or manually input your investment portfolio details.
-3. **Get Recommendations**: View AI-powered insights, including market trends, risk assessments, and investment suggestions.
-4. **Monitor Performance**: Track your portfolio performance through interactive data visualizations.
-
-## 📚 Learn More
-
-For more details on how the AI models work, check out the `/models` folder in the backend directory, which contains code and explanations for each machine learning model used.
-
-## 🤝 Contributing
-
-Contributions are welcome! To contribute:
 1. Fork the repository.
 2. Create a new branch (`git checkout -b feature/YourFeature`).
 3. Commit your changes (`git commit -m 'Add some feature'`).
 4. Push to the branch (`git push origin feature/YourFeature`).
 5. Open a pull request.
 
-## 🔒 License
+## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-With **Financial AI Advisor**, take charge of your financial journey by leveraging the power of AI for informed investment decisions and personalized financial planning.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE)
+file for details.

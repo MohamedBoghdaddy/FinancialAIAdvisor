@@ -34,5 +34,9 @@ motor
 # 🔐 Environment Management
 python-dotenv
 
+# 🧪 Testing
+pytest
+httpx
+
 # 🧠 Optional: GPU monitoring (optional, comment out if not used)
 GPUtil

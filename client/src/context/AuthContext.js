@@ -1,4 +1,7 @@
-// ✅ AuthContext.js (ensure token loads user before app renders)
+// ✅ AuthContext.js — single source of truth for auth/admin state.
+// Admin status (`isAdmin`) is derived from the user object returned by the
+// backend's /api/users/checkAuth endpoint, NEVER from raw localStorage values
+// edited by the client. Treat localStorage only as a cache for the JWT.
 import React, {
   createContext, useReducer, useEffect,
   useCallback, useContext, useMemo
@@ -28,13 +31,7 @@ const authReducer = (state, action) => {
   }
 };
 
-const getToken = () => {
-  return (
-    Cookies.get("token") ||
-    localStorage.getItem("token") ||
-    JSON.parse(localStorage.getItem("user") || "null")?.token
-  );
-};
+const getToken = () => Cookies.get("token") || localStorage.getItem("token");
 
 export const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
@@ -50,6 +47,9 @@ export const AuthProvider = ({ children }) => {
     delete axios.defaults.headers.common["Authorization"];
   };
 
+  // Re-validates the session against the backend. This is the ONLY source
+  // of truth for `user` (and therefore `isAdmin`) — never trust a
+  // client-edited localStorage "user" object for authorization decisions.
   const checkAuth = useCallback(async () => {
     try {
       const token = getToken();
@@ -61,11 +61,12 @@ export const AuthProvider = ({ children }) => {
       });
 
       if (res.data?.user) {
-        const userData = { user: res.data.user, token };
-        localStorage.setItem("user", JSON.stringify(userData));
+        localStorage.setItem("user", JSON.stringify(res.data.user));
+        localStorage.setItem("token", token);
         Cookies.set("token", token, { expires: 7 });
         dispatch({ type: "USER_LOADED", payload: res.data.user });
       } else {
+        clearAuthStorage();
         dispatch({ type: "AUTH_ERROR" });
       }
     } catch (err) {
@@ -74,26 +75,34 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    const token = getToken();
-    if (storedUser && token) {
-      try {
-        const parsedUser = JSON.parse(storedUser);
-        setAuthHeaders(token);
-        dispatch({ type: "LOGIN_SUCCESS", payload: parsedUser.user });
-      } catch {
-        clearAuthStorage();
-      }
+  const logout = useCallback(async () => {
+    try {
+      await axios.post(`${API_URL}/api/users/logout`, {}, { withCredentials: true });
+    } catch (err) {
+      // Ignore network errors on logout — clear local session regardless.
+    } finally {
+      clearAuthStorage();
+      dispatch({ type: "LOGOUT_SUCCESS" });
     }
+  }, []);
+
+  useEffect(() => {
+    const token = getToken();
+    if (token) {
+      setAuthHeaders(token);
+    }
+    // Always re-validate with the backend on load — localStorage is only a cache.
     checkAuth();
   }, [checkAuth]);
 
-  return (
-    <AuthContext.Provider value={{ state, dispatch, checkAuth }}>
-      {children}
-    </AuthContext.Provider>
+  const isAdmin = state.user?.role === "admin";
+
+  const value = useMemo(
+    () => ({ state, dispatch, checkAuth, logout, isAdmin }),
+    [state, checkAuth, logout, isAdmin]
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuthContext = () => useContext(AuthContext);

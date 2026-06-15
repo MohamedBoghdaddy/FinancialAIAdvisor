@@ -35,8 +35,8 @@ const ProfileSchema = new mongoose.Schema(
       lowercase: true,
     },
     income: {
-      type: String,
-      trim: true,
+      type: Number,
+      min: [0, "Income cannot be negative"],
     },
     financialGoals: {
       type: String,
@@ -53,28 +53,28 @@ const ProfileSchema = new mongoose.Schema(
       trim: true,
     },
     rent: {
-      type: String,
-      trim: true,
+      type: Number,
+      min: [0, "Rent cannot be negative"],
     },
     utilities: {
-      type: String,
-      trim: true,
+      type: Number,
+      min: [0, "Utilities cannot be negative"],
     },
     dietPlan: {
       type: String,
       trim: true,
     },
     transportCost: {
-      type: String,
-      trim: true,
+      type: Number,
+      min: [0, "Transport cost cannot be negative"],
     },
     otherRecurring: {
-      type: String,
-      trim: true,
+      type: Number,
+      min: [0, "Other recurring expenses cannot be negative"],
     },
     savingAmount: {
-      type: String,
-      trim: true,
+      type: Number,
+      min: [0, "Saving amount cannot be negative"],
     },
     customExpenses: {
       type: [CustomExpenseSchema],

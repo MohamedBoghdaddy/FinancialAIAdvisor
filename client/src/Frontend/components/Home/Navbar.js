@@ -105,7 +105,7 @@ const NavBar = () => {
           <Navbar.Brand as={Link} to="/" className="navbar-logo">
             <img
               src={Logo}
-              alt="Financial AI Advisor"
+              alt="FinGenie"
               style={{ width: "80px", height: "57px" }}
             />
           </Navbar.Brand>

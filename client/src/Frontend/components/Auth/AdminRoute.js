@@ -1,23 +1,30 @@
 import React from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
+import { useAuthContext } from "../../../context/AuthContext";
 
+// Admin access is determined ONLY by the role returned from the backend
+// (via AuthContext/checkAuth), never from client-editable localStorage values.
 const AdminRoute = ({ children }) => {
-  const token = localStorage.getItem("token");
+  const { state, isAdmin } = useAuthContext();
+  const { isAuthenticated, loading } = state;
+  const location = useLocation();
 
-  // Try to parse user from localStorage
-  let isAdmin = false;
-  try {
-    const user = JSON.parse(localStorage.getItem("user"));
-    isAdmin = user?.role === "admin";
-  } catch (error) {
-    console.error("❌ Error parsing user data:", error);
+  if (loading) {
+    return (
+      <div className="loading-container">
+        <div className="spinner"></div>
+        <p>Checking authentication...</p>
+      </div>
+    );
   }
 
-  // Redirect if not authenticated
-  if (!token) return <Navigate to="/login" replace />;
+  if (!isAuthenticated) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
 
-  // Redirect non-admin users to dashboard
-  if (!isAdmin) return <Navigate to="/Dashboard" replace />;
+  if (!isAdmin) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   return children;
 };

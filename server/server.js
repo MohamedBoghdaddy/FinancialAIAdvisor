@@ -1,6 +1,5 @@
 // 📦 Core Imports
 import express from "express";
-import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import mongoose from "mongoose";
@@ -14,6 +13,7 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import loanRoutes from './routes/loanRoutes.js';
 import expenseRoutes from "./routes/ExpenseRoutes.js";
+import { env } from "./config/env.js";
 
 // 🌍 Route Imports
 import userRoutes from "./routes/userroutes.js";
@@ -21,24 +21,15 @@ import chatRoutes from "./routes/chatRoutes.js";
 import analyticsRoutes from "./routes/analyticRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
 import currencyRoutes from "./routes/currencyRoutes.js";
+import securityRoutes from "./routes/securityRoutes.js";
+import voiceRoutes from "./routes/voiceRoutes.js";
 
 // 📁 Path & Env Setup
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-dotenv.config();
 
-// 🔐 Configuration
-const PORT = process.env.PORT || 4000;
-const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:3000";
-const FLASK_API_BASE_URL = process.env.FLASK_API_URL || "http://localhost:8000";
-const JWT_SECRET = process.env.JWT_SECRET || "secure_dev_token";
-const MONGO_URL = process.env.MONGO_URL || "mongodb://localhost:27017/financialAI";
-
-// 🚨 Verify Config
-if (!MONGO_URL) {
-  console.error("❌ MongoDB URI missing.");
-  process.exit(1);
-}
+// 🔐 Configuration (validated centrally; exits process if misconfigured in production)
+const { PORT, CLIENT_URL, FLASK_API_BASE_URL, JWT_SECRET, MONGO_URL } = env;
 
 // 🍃 MongoDB Connection
 const connectDB = async () => {
@@ -126,6 +117,8 @@ app.use("/api/profile", profileRoutes);
 app.use("/api/currency", currencyRoutes); // ✅ moved after app initialization
 app.use('/api/loan', loanRoutes);
 app.use("/api/expenses", expenseRoutes);
+app.use("/api/security", securityRoutes);
+app.use("/api/voice", voiceRoutes);
 // 🔄 FastAPI Proxy Configuration
 const forwardRequest = async (req, res, endpoint) => {
   try {
@@ -149,11 +142,14 @@ const forwardRequest = async (req, res, endpoint) => {
   }
 };
 
-// 🔄 Proxy Routes
-app.post("/api/chat", (req, res) => forwardRequest(req, res, "/chat"));
-app.post("/api/phi/infer", (req, res) => forwardRequest(req, res, "/infer"));
-app.post("/api/phi/analyze", (req, res) => forwardRequest(req, res, "/analyze"));
-app.post("/api/phi/generate", (req, res) => forwardRequest(req, res, "/generate"));
+// 🔄 Proxy Routes (forward to the FastAPI services app)
+app.post("/api/chat", (req, res) => forwardRequest(req, res, "/chatbot/chat"));
+app.post("/api/llm/generate", (req, res) => forwardRequest(req, res, "/api/llm/generate"));
+app.post("/api/llm/financial-advice", (req, res) =>
+  forwardRequest(req, res, "/api/llm/financial-advice")
+);
+app.post("/api/llm/intent", (req, res) => forwardRequest(req, res, "/api/llm/intent"));
+app.post("/api/llm/scam-check", (req, res) => forwardRequest(req, res, "/api/llm/scam-check"));
 
 // ⚛️ Serve React Frontend in Production
 if (process.env.NODE_ENV === "production") {
@@ -163,12 +159,25 @@ if (process.env.NODE_ENV === "production") {
   });
 }
 
+// 🚫 404 Handler for unmatched API routes
+app.use("/api", (req, res) => {
+  res.status(404).json({
+    success: false,
+    message: `Route not found: ${req.method} ${req.originalUrl}`,
+    errorCode: "NOT_FOUND",
+  });
+});
+
 // 🚨 Error Handling Middleware
 app.use((err, req, res, next) => {
   console.error("❌ Server Error:", err.stack);
-  res.status(500).json({
-    error: "Internal Server Error",
-    message: process.env.NODE_ENV === "development" ? err.message : undefined,
+  res.status(err.status || 500).json({
+    success: false,
+    message:
+      process.env.NODE_ENV === "development"
+        ? err.message
+        : "Internal Server Error",
+    errorCode: err.code || "INTERNAL_ERROR",
   });
 });
 

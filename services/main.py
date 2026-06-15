@@ -2,7 +2,6 @@ import os
 import sys
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routes.chatbot import chatbot_bp
 
 # Add project root to Python path
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -13,8 +12,11 @@ try:
     from stock.stock_router import router as stock_router
     from gold.gold_router import router as gold_router
     from real_estate.real_estate_router import router as real_estate_router
-    from agent.Phi_Model.phi_model_router import router as phi_model_router
-    from agent.Phi_Model.phi2_loader import get_model
+    from agent.qwen.router import router as qwen_router
+    from routes.chatbot import router as chatbot_router
+    from routes.goals_router import router as goals_router
+    from ds.router import router as ds_router
+    from security.router import router as security_router
 except ImportError as e:
     print(f"❌ Import Error: {str(e)}")
     print("Verify directory structure and __init__.py files:")
@@ -22,14 +24,15 @@ except ImportError as e:
     print("├── stock/")
     print("├── gold/")
     print("├── real_estate/")
-    print("└── agent/Phi_Model/")
+    print("├── routes/")
+    print("└── agent/qwen/")
     sys.exit(1)
 
 # === FastAPI App Initialization ===
 app = FastAPI(
-    title="AI Financial Advisor",
-    version="1.3.0",
-    description="Multi-Market Financial Analysis Platform",
+    title="FinGenie API",
+    version="2.0.0",
+    description="FinGenie - AI Personal Finance Intelligence Platform",
     docs_url="/api/docs"
 )
 
@@ -51,7 +54,11 @@ service_config = {
     "stock": {"router": stock_router, "prefix": "/api/stock"},
     "gold": {"router": gold_router, "prefix": "/api/gold"},
     "real_estate": {"router": real_estate_router, "prefix": "/api/realestate"},
-    "phi_model": {"router": phi_model_router, "prefix": "/api"},
+    "llm": {"router": qwen_router, "prefix": "/api/llm"},
+    "chatbot": {"router": chatbot_router, "prefix": "/chatbot"},
+    "goals": {"router": goals_router, "prefix": "/api/goals"},
+    "ds": {"router": ds_router, "prefix": "/api/ds"},
+    "security": {"router": security_router, "prefix": "/api/security"},
 }
 
 for service, config in service_config.items():
@@ -61,36 +68,31 @@ for service, config in service_config.items():
     except Exception as e:
         print(f"❌ Failed to load {service} service: {str(e)}")
 
-# === Register Chatbot Blueprint ===
-app.include_router(chatbot_bp, prefix="/chatbot")
-
 # === Health Check ===
 @app.get("/api/health")
 async def health_check():
-    model, _ = get_model()
+    from agent.qwen import loader
+
     return {
         "status": "operational",
         "services": list(service_config.keys()),
-        "model_status": "loaded" if model else "offline"
+        "llm_model_status": "loaded" if loader.is_loaded() else "not_loaded",
     }
 
 # === Root Endpoint ===
 @app.get("/")
 async def root():
     return {
-        "message": "✅ AI Financial Advisor API is live",
+        "message": "✅ FinGenie API is live",
         "version": app.version,
         "documentation": "/api/docs"
     }
 
-# === Run with SSL if executed directly ===
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
-        port=8000,
+        port=int(os.environ.get("PORT", 8000)),
         reload=False,
-        ssl_keyfile="./localhost-key.pem",
-        ssl_certfile="./localhost.pem"
     )

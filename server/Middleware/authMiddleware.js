@@ -1,17 +1,14 @@
 // middleware/authMiddleware.js
 import jwt from "jsonwebtoken";
 import User from "../models/UserModel.js";
-import dotenv from "dotenv";
+import { env } from "../config/env.js";
 
-dotenv.config();
-
-const JWT_SECRET = process.env.JWT_SECRET || "secure_dev_token";
+const JWT_SECRET = env.JWT_SECRET;
 
 /**
  * ✅ Enhanced Authentication Middleware
  * - Supports both Bearer token and cookie-based authentication
  * - Verifies token against database user (using correct id field)
- * - Detailed logging for debugging
  * - Role-based authorization support
  */
 export const auth = async (req, res, next) => {
@@ -21,7 +18,6 @@ export const auth = async (req, res, next) => {
       req.header("Authorization")?.replace("Bearer ", "") || req.cookies?.token;
 
     if (!token) {
-      console.log("No authentication token provided");
       return res.status(401).json({
         success: false,
         message: "Authentication required",
@@ -30,12 +26,10 @@ export const auth = async (req, res, next) => {
 
     // Verify JWT
     const decoded = jwt.verify(token, JWT_SECRET);
-    console.log("Decoded token payload:", decoded);
 
     // Determine user ID from token payload
     const userId = decoded.id || decoded._id;
     if (!userId) {
-      console.error("Token payload missing user ID");
       return res.status(401).json({
         success: false,
         message: "Invalid token payload",
@@ -54,7 +48,6 @@ export const auth = async (req, res, next) => {
     const user = await User.findOne(userQuery).select("-password");
 
     if (!user) {
-      console.log("User not found for token", { userId, token });
       return res.status(401).json({
         success: false,
         message: "User not found",
@@ -64,13 +57,11 @@ export const auth = async (req, res, next) => {
     // Attach user and token to request
     req.token = token;
     req.user = user;
-    console.log(`Authenticated user: ${user._id} (${user.role})`);
     next();
   } catch (err) {
-    console.error("Authentication error:", {
-      message: err.message,
-      stack: err.stack,
-    });
+    if (env.NODE_ENV === "development") {
+      console.error("Authentication error:", err.message);
+    }
 
     let message = "Please authenticate";
     if (err.name === "TokenExpiredError") {
@@ -113,7 +104,6 @@ export const authorizeRoles = (...roles) => {
       });
     }
 
-    console.log(`Role access granted to ${req.user.role}`);
     next();
   };
 };

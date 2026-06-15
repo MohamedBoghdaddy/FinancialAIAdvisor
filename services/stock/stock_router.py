@@ -1,15 +1,36 @@
+import json
+from typing import Optional
+
 from fastapi import APIRouter, Query, HTTPException
+from pydantic import BaseModel
 import pandas as pd
 import yfinance as yf
 import joblib
 import os
 from datetime import datetime, timedelta
 
-router = APIRouter(prefix="/stock", tags=["Stock"])
+router = APIRouter(tags=["Stock"])
+
+DISCLAIMER = "Forecasts are educational estimates, not financial advice."
 
 # === Config ===
 MODEL_DIR = "stock/model"
 os.makedirs(MODEL_DIR, exist_ok=True)
+
+
+class ModelMetrics(BaseModel):
+    model: str
+    MAE: Optional[float] = None
+    RMSE: Optional[float] = None
+    R2: Optional[float] = None
+    status: str = "ok"
+
+
+class MetricsResponse(BaseModel):
+    asset: str = "stock"
+    models: list[ModelMetrics]
+    best_model: Optional[str] = None
+    disclaimer: str = DISCLAIMER
 
 # === Prediction ===
 @router.get("/predict")
@@ -90,17 +111,18 @@ def historical(symbol: str = Query("AAPL"), period: str = Query("1y")):
 
 
 # === Metrics ===
-@router.get("/metrics")
-def metrics(symbol: str = Query("AAPL")):
+@router.get("/metrics", response_model=MetricsResponse)
+def metrics():
     try:
-        model = joblib.load(os.path.join(MODEL_DIR, "rf_model.pkl"))
-        scaler = joblib.load(os.path.join(MODEL_DIR, "rf_scaler.pkl"))
-        return {
-            "model": "Random Forest",
-            "symbol": symbol,
-            "n_estimators": model.n_estimators,
-            "max_depth": model.max_depth,
-            "feature_range": scaler.feature_range,
-        }
+        results_path = os.path.join(os.path.dirname(__file__), "STOCK_forecast_results.json")
+        with open(results_path, "r") as f:
+            results = json.load(f)
+
+        models = [
+            ModelMetrics(model=name, MAE=data["MAE"], RMSE=data["RMSE"], R2=data["R2"])
+            for name, data in results.items()
+        ]
+        best = max(results.items(), key=lambda x: x[1]["R2"])
+        return MetricsResponse(asset="stock", models=models, best_model=best[0])
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Metrics error: {str(e)}")

@@ -1,4 +1,3 @@
-import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs"; // bcryptjs preferred for ease of use
 import multer from "multer";
@@ -6,9 +5,10 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 import User from "../models/UserModel.js";
+import { env } from "../config/env.js";
+import { recordAuditLog } from "../utils/auditLog.js";
 
-dotenv.config();
-const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_here";
+const JWT_SECRET = env.JWT_SECRET;
 
 // __dirname resolution for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -80,13 +80,17 @@ export const registerUser = async (req, res) => {
 export const loginUser = async (req, res) => {
   const { email, password } = req.body;
   try {
-    console.log("Login attempt:", email);
-
     // Find user and include password explicitly
     const user = await User.findOne({ email }).select("+password");
-    console.log("User found:", user ? user.email : "No user");
 
     if (!user) {
+      await recordAuditLog({
+        action: "failed_login",
+        category: "auth",
+        req,
+        metadata: { email },
+        riskLevel: "medium",
+      });
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
@@ -102,9 +106,16 @@ export const loginUser = async (req, res) => {
 
     // Compare password
     const isMatch = await bcrypt.compare(password, user.password);
-    console.log("Password match:", isMatch);
 
     if (!isMatch) {
+      await recordAuditLog({
+        userId: user._id,
+        action: "failed_login",
+        category: "auth",
+        req,
+        metadata: { email },
+        riskLevel: "medium",
+      });
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
@@ -117,6 +128,14 @@ export const loginUser = async (req, res) => {
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    });
+
+    await recordAuditLog({
+      userId: user._id,
+      action: "login",
+      category: "auth",
+      req,
+      riskLevel: "low",
     });
 
     // Return user info and token
@@ -186,11 +205,34 @@ export const checkAuth = async (req, res) => {
   }
 };
 
+// Fields a user is allowed to update on their own account.
+const SELF_EDITABLE_FIELDS = [
+  "firstName",
+  "lastName",
+  "gender",
+  "receiveNotifications",
+  "profilePhoto",
+];
+
 // UPDATE USER PROFILE (including optional profile photo upload)
+// Users may only update their own profile; admins may update any profile.
+// Role, password, and blocked status cannot be changed through this endpoint.
 export const updateUserProfile = async (req, res) => {
   try {
     const { userId } = req.params;
-    const updates = { ...req.body };
+    const isOwner = req.user._id.toString() === userId;
+    const isAdmin = req.user.role === "admin";
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({
+        message: "You are not allowed to update this user's profile",
+      });
+    }
+
+    const updates = {};
+    for (const field of SELF_EDITABLE_FIELDS) {
+      if (req.body[field] !== undefined) updates[field] = req.body[field];
+    }
     if (req.file) updates.profilePhoto = `/uploads/${req.file.filename}`;
 
     const updatedUser = await User.findByIdAndUpdate(userId, updates, {
@@ -211,6 +253,15 @@ export const deleteUser = async (req, res) => {
     const user = await User.findByIdAndDelete(req.params.userId);
     if (!user) return res.status(404).json({ message: "User not found" });
 
+    await recordAuditLog({
+      userId: req.user?._id,
+      action: "delete_user",
+      category: "admin",
+      req,
+      metadata: { targetUserId: req.params.userId, targetEmail: user.email },
+      riskLevel: "high",
+    });
+
     res.status(200).json({ message: "User deleted" });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -225,6 +276,15 @@ export const toggleBlockStatus = async (req, res) => {
 
     user.blocked = !user.blocked;
     await user.save();
+
+    await recordAuditLog({
+      userId: req.user?._id,
+      action: "toggle_block_user",
+      category: "admin",
+      req,
+      metadata: { targetUserId: user._id.toString(), blocked: user.blocked },
+      riskLevel: "high",
+    });
 
     res.json({ success: true, blocked: user.blocked });
   } catch (err) {
@@ -268,6 +328,20 @@ export const updateUserRoleOrPassword = async (req, res) => {
     if (newPassword) user.password = await bcrypt.hash(newPassword, 10);
 
     await user.save();
+
+    await recordAuditLog({
+      userId: req.user?._id,
+      action: "admin_update_user",
+      category: "admin",
+      req,
+      metadata: {
+        targetUserId: id,
+        roleChanged: Boolean(newRole),
+        passwordChanged: Boolean(newPassword),
+      },
+      riskLevel: "high",
+    });
+
     res.json({ success: true, message: "User updated successfully" });
   } catch (err) {
     res.status(500).json({ message: "Error updating user" });
@@ -285,6 +359,15 @@ export const updateUserRole = async (req, res) => {
 
     user.role = newRole;
     await user.save();
+
+    await recordAuditLog({
+      userId: req.user?._id,
+      action: "admin_update_role",
+      category: "admin",
+      req,
+      metadata: { targetUserId: id, newRole },
+      riskLevel: "high",
+    });
 
     res.json({ success: true, message: "Role updated successfully" });
   } catch (err) {

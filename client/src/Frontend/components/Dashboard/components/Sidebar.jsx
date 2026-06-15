@@ -14,6 +14,10 @@ import {
   FaCogs,
   FaCalculator,
   FaBalanceScale,
+  FaShieldAlt,
+  FaHeartbeat,
+  FaMicrophone,
+  FaInfoCircle,
 } from "react-icons/fa";
 import { Modal, Button } from "react-bootstrap";
 import { useAuthContext } from "../../../../context/AuthContext";
@@ -183,7 +187,7 @@ const Sidebar = () => {
           </Link>
         </li>
         <li>
-          <Link to="/InvestmentCard" className={linkClass("/InvestmentCard")}>
+          <Link to="/dashboard/tabs" className={linkClass("/dashboard/tabs")}>
             <FaWallet /> Investments
           </Link>
         </li>
@@ -193,17 +197,17 @@ const Sidebar = () => {
           </Link>
         </li>
         <li>
-          <Link to="/Settings" className={linkClass("/settings")}>
+          <Link to="/settings" className={linkClass("/settings")}>
             <FaCogs /> Settings
           </Link>
         </li>
         <li>
-          <Link to="/AIChat">
+          <Link to="/aichat" className={linkClass("/aichat")}>
             <FaCog /> AIChat
           </Link>
         </li>
         <li>
-          <Link to="/statistics">
+          <Link to="/dashboard/tabs" className={linkClass("/dashboard/tabs")}>
             <FaChartLine /> Statistics
           </Link>
         </li>
@@ -236,6 +240,41 @@ const Sidebar = () => {
   <Link to="/chatbot">
     <i className="sidebar-icon">🤖</i>
     AI Chatbot
+  </Link>
+</li>
+<li>
+  <Link to="/health-score" className={linkClass("/health-score")}>
+    <FaHeartbeat /> Financial Health Score
+  </Link>
+</li>
+<li>
+  <Link to="/scenario-simulator" className={linkClass("/scenario-simulator")}>
+    <FaCalculator /> Scenario Simulator
+  </Link>
+</li>
+<li>
+  <Link to="/model-metrics" className={linkClass("/model-metrics")}>
+    <FaBalanceScale /> Model Metrics
+  </Link>
+</li>
+<li>
+  <Link to="/scam-checker" className={linkClass("/scam-checker")}>
+    <FaShieldAlt /> Scam Checker
+  </Link>
+</li>
+<li>
+  <Link to="/security-center" className={linkClass("/security-center")}>
+    <FaShieldAlt /> Security Center
+  </Link>
+</li>
+<li>
+  <Link to="/voice-commands" className={linkClass("/voice-commands")}>
+    <FaMicrophone /> Voice Commands
+  </Link>
+</li>
+<li>
+  <Link to="/ai-trust-center" className={linkClass("/ai-trust-center")}>
+    <FaInfoCircle /> AI Trust Center
   </Link>
 </li>
       </ul>

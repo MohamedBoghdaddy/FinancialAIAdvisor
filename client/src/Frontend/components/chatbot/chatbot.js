@@ -220,7 +220,7 @@ const Chatbot = () => {
                 alt="Financial Assistant"
                 className="welcome-image"
               />
-              <h4>Welcome to Financial AI Advisor!</h4>
+              <h4>Welcome to FinGenie!</h4>
               <p>
                 Ask me anything about financial planning, investments, market
                 trends, or getting personalized financial advice.

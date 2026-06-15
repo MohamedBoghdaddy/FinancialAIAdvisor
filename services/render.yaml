@@ -1,16 +1,23 @@
 services:
   - type: web
-    name: financial-ai-agent
+    name: fingenie-agent
     runtime: python
+    rootDir: services
     python:
-      version: "3.9"
+      version: "3.11"
     buildCommand: |
       pip install -r requirements.txt
     startCommand: |
-      uvicorn app.main:app --host 0.0.0.0 --port 8000
+      uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHONUNBUFFERED
         value: "1"
-      - key: QUESTIONNAIRE_SERVICE_URL
-        value: your-questionnaire-service-url  # Set this in Render dashboard
-    plan: standard  # Minimum for Phi-2 (2GB RAM)
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: LOCAL_LLM_MODEL_ID
+        value: Qwen/Qwen2.5-1.5B-Instruct
+      - key: LOCAL_LLM_DEVICE
+        value: cpu
+      - key: LOCAL_LLM_LOAD_IN_4BIT
+        value: "false"
+    plan: standard  # CPU inference for the 1.5B LLM benefits from more RAM

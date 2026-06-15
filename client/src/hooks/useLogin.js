@@ -27,25 +27,6 @@ export const useLogin = () => {
       setErrorMessage("");
       setSuccessMessage("");
 
-      // Admin shortcut login
-      if (email === "ahmedaref@gmail.com" && password === "12345678") {
-        localStorage.setItem("admin_logged_in", "true");
-        localStorage.setItem("token", "admin_token");
-        localStorage.setItem(
-          "user",
-          JSON.stringify({ role: "admin", username: "Ahmed Aref", email })
-        );
-
-        dispatch({
-          type: "LOGIN_SUCCESS",
-          payload: { role: "admin", username: "Ahmed Aref", email },
-        });
-
-        navigate("/admin/dashboard");
-        setIsLoading(false);
-        return;
-      }
-
       try {
         const response = await axios.post(
           `${API_URL}/api/users/login`,
@@ -70,7 +51,7 @@ export const useLogin = () => {
         dispatch({ type: "LOGIN_SUCCESS", payload: user });
 
         setSuccessMessage("Login successful");
-        navigate("/");
+        navigate(user.role === "admin" ? "/admin/dashboard" : "/dashboard");
       } catch (error) {
         console.error("Login error:", error);
         setErrorMessage(

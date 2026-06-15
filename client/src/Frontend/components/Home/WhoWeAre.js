@@ -54,7 +54,7 @@ const WhoWeAre = () => {
           <div className="about-image-container">
             <img
               src={AboutUs}
-              alt="About Financial AI Advisor"
+              alt="About FinGenie"
               className="img-fluid rounded"
             />
           </div>

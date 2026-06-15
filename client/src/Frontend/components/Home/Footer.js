@@ -23,7 +23,7 @@ function Footer() {
             <div className="footer-brand">
               <img
                 src={OurLogo}
-                alt="Financial AI Advisor"
+                alt="FinGenie"
                 className="footer-logo"
               />
               <p className="mt-3">
@@ -128,7 +128,7 @@ function Footer() {
 
         <div className="footer-bottom">
           <p className="copyright">
-            &copy; {currentYear} Financial AI Advisor. All rights reserved.
+            &copy; {currentYear} FinGenie. All rights reserved.
           </p>
           <div className="footer-bottom-links">
             <a href="#">Privacy Policy</a>

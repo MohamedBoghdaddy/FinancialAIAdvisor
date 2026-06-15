@@ -7,59 +7,60 @@ import AdminSidebar from "./AdminSidebar";
 import "react-toastify/dist/ReactToastify.css";
 import "../../styles/admin.css";
 
+const API_URL =
+    process.env.REACT_APP_API_URL ||
+    (window.location.hostname === "localhost"
+        ? "http://localhost:4000"
+        : "https://financial-ai-backend-kr2s.onrender.com");
+
+// Admin access (route guard + role check) is enforced by <AdminRoute>, which
+// relies on the backend-verified role from AuthContext — no localStorage checks here.
 const AdminDashboard = () => {
     const navigate = useNavigate();
     const [users, setUsers] = useState([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const usersPerPage = 6;
-    const [aiChatsCount, setAiChatsCount] = useState(0);
-    const [questionnairesCount, setQuestionnairesCount] = useState(0);
 
     useEffect(() => {
-        const isAdmin = localStorage.getItem("admin_logged_in");
-        if (!isAdmin) return navigate("/login");
-
-        const fetchData = async () => {
+        const fetchUsers = async () => {
             try {
-                const [userRes, aiRes, qRes] = await Promise.all([
-                    axios.get("http://localhost:4000/api/users/all"),
-                    axios.get("http://localhost:4000/api/stats/ai-chats"),
-                    axios.get("http://localhost:4000/api/stats/questionnaires"),
-                ]);
-
-                setUsers(Array.isArray(userRes.data) ? userRes.data : []);
-                setAiChatsCount(aiRes.data.count);
-                setQuestionnairesCount(qRes.data.count);
+                const res = await axios.get(`${API_URL}/api/users/all`, {
+                    withCredentials: true,
+                });
+                setUsers(Array.isArray(res.data) ? res.data : []);
             } catch (err) {
-                console.error("Failed to load dashboard data", err);
+                toast.error("Failed to load users.");
             }
         };
 
-        fetchData();
-    }, [navigate]);
+        fetchUsers();
+    }, []);
 
     const handleToggleBlock = async (id) => {
         try {
-            await axios.put(`http://localhost:4000/api/users/toggle-block/${id}`, {}, {
-                headers: { "Content-Type": "application/json" }
-            }); toast.success("User status updated.");
+            await axios.put(
+                `${API_URL}/api/users/toggle-block/${id}`,
+                {},
+                { withCredentials: true }
+            );
+            toast.success("User status updated.");
             setUsers((prev) =>
                 prev.map((u) => (u._id === id ? { ...u, blocked: !u.blocked } : u))
             );
         } catch (err) {
-            console.error(err);
             toast.error("Failed to update user status.");
         }
     };
 
     const handleDeleteUser = async (id) => {
         try {
-            await axios.delete(`http://localhost:4000/api/users/delete/${id}`);
+            await axios.delete(`${API_URL}/api/users/delete/${id}`, {
+                withCredentials: true,
+            });
             toast.success("User deleted.");
             setUsers((prev) => prev.filter((u) => u._id !== id));
         } catch (err) {
-            console.error(err);
             toast.error("Failed to delete user.");
         }
     };
@@ -91,8 +92,6 @@ const AdminDashboard = () => {
 
                 <div className="admin-cards">
                     <div className="admin-card">👥 Users: {users.length}</div>
-                    <div className="admin-card">🧠 AI Chats: {aiChatsCount}</div>
-                    <div className="admin-card">📋 Questionnaires: {questionnairesCount}</div>
                     <div className="admin-card">
                         <CSVLink
                             data={users}

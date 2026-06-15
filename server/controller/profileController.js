@@ -50,8 +50,7 @@ const devLog = (...args) => {
  * Get latest profile for authenticated user
  */
 export const getLatestProfile = async (req, res) => {
-  devLog("Received headers:", req.headers);
-  devLog("Authenticated user:", req.user);
+  devLog("Fetching latest profile for user:", req.user?._id?.toString());
 
   try {
     const profile = await Profile.findOne({ userId: req.user._id })
@@ -123,6 +122,27 @@ export const createOrUpdateProfile = async (req, res) => {
       lastUpdated: new Date(),
       updatedBy: userId,
     };
+
+    // Coerce numeric money fields (forms may submit them as strings).
+    // Empty strings are dropped so they don't overwrite existing values
+    // with an invalid cast.
+    const NUMERIC_FIELDS = [
+      "income",
+      "rent",
+      "utilities",
+      "transportCost",
+      "otherRecurring",
+      "savingAmount",
+      "salary",
+    ];
+    for (const field of NUMERIC_FIELDS) {
+      if (updateData[field] === "" || updateData[field] === null) {
+        delete updateData[field];
+      } else if (updateData[field] !== undefined) {
+        const num = Number(updateData[field]);
+        if (!isNaN(num)) updateData[field] = num;
+      }
+    }
 
     if (Array.isArray(updateData.customExpenses)) {
       updateData.customExpenses = updateData.customExpenses

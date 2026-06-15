@@ -1,27 +1,32 @@
-from fastapi import APIRouter, FastAPI, HTTPException, Query
+from typing import Optional
+
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 import json
 import numpy as np
 import pandas as pd
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.preprocessing import MinMaxScaler
 from tensorflow.keras.models import load_model
-from datetime import datetime, timedelta
+from datetime import timedelta
 import joblib
 
 router = APIRouter()
 
-# === Response Schemas ===
-class ForecastResponse(BaseModel):
-    model: str
-    predictions: list[float]
-    actual: list[float]
+DISCLAIMER = "Forecasts are educational estimates, not financial advice."
 
-class MetricResponse(BaseModel):
+# === Response Schemas ===
+class ModelMetrics(BaseModel):
     model: str
-    MAE: float
-    RMSE: float
-    R2: float
+    MAE: Optional[float] = None
+    RMSE: Optional[float] = None
+    R2: Optional[float] = None
+    status: str = "ok"
+
+class MetricsResponse(BaseModel):
+    asset: str = "gold"
+    models: list[ModelMetrics]
+    best_model: Optional[str] = None
+    disclaimer: str = DISCLAIMER
 
 class BestModelResponse(BaseModel):
     best_model: str
@@ -79,33 +84,28 @@ def get_gold_history(period: str = Query("1y", enum=["5y", "3y", "1y", "6mo", "3
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"History fetch error: {str(e)}")
 
-# === /gold/forecast ===
-@router.get("/forecast", response_model=list[ForecastResponse])
-def get_all_gold_forecasts():
-    try:
-        results = load_json_file("data/Gold_forecast_results.json")
-        df = pd.read_csv("data/data.csv")
-        df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
-        df = df.dropna(subset=["Date"])
-        df.set_index("Date", inplace=True)
-        df.sort_index(inplace=True)
-        y_true = df[results["best_model"]][-(len(results["rmses"]["Prophet"])):]  # Replace with correct column/length logic
-
-        return [
-            ForecastResponse(model=model, predictions=[], actual=[]) for model in results["rmses"]  # Placeholder
-        ]
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Forecast fetch error: {str(e)}")
-
 # === /gold/metrics ===
-@router.get("/metrics", response_model=list[MetricResponse])
+# Only RMSE was computed during training for gold models; MAE/R2 were never
+# measured. We report them as null rather than fabricating values.
+@router.get("/metrics", response_model=MetricsResponse)
 def get_model_metrics():
     try:
         data = load_json_file("data/Gold_forecast_results.json")
-        return [
-            MetricResponse(model=model, MAE=-1, RMSE=rmses, R2=-1)  # Placeholder MAE and R2
-            for model, rmses in data["rmses"].items()
+        models = [
+            ModelMetrics(
+                model=model,
+                MAE=None,
+                RMSE=rmse,
+                R2=None,
+                status="partial_metrics",
+            )
+            for model, rmse in data["rmses"].items()
         ]
+        return MetricsResponse(
+            asset="gold",
+            models=models,
+            best_model=data.get("best_model"),
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Metric computation error: {str(e)}")
 
@@ -154,7 +154,3 @@ def get_extended_forecasts():
         return ExtendedForecastResponse(forecasts=forecast)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Forecast load error: {str(e)}")
-
-# === FastAPI App ===
-app = FastAPI(title="🌍 Gold Forecasting API")
-app.include_router(router, prefix="/gold", tags=["Gold"])
