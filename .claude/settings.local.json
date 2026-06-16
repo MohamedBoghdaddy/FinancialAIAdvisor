@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "defaultMode": "bypassPermissions",
+    "allow": [
+      "Read",
+      "Edit",
+      "Write",
+      "Bash(python -c *)",
+      "Bash(py -c *)",
+      "Bash(python *)",
+      "Bash(py *)",
+      "mcp__572f9c10-37d4-4e1a-8c33-86ef908a1c16__mempalace_status"
+    ]
+  }
+}
